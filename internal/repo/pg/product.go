@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
+	"github.com/Archiker-715/e-commerce-api/internal/repo/pg/query"
 	"gorm.io/gorm"
 )
 
@@ -15,22 +16,22 @@ func NewProductRepo(db *gorm.DB) *ProductRepo {
 	return &ProductRepo{DB: db}
 }
 
-func (p ProductRepo) GetProducts() (products []entity.Product, err error) {
-	if err = p.DB.Raw("SELECT * FROM product").Scan(&products).Error; err != nil {
+func (p *ProductRepo) GetProducts() (products []entity.Product, err error) {
+	if err = p.DB.Raw(query.GetProduct()).Scan(&products).Error; err != nil {
 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
 	}
 	return
 }
 
-func (p ProductRepo) GetProductById(productId uint) (products []entity.Product, err error) {
-	if err = p.DB.Raw("SELECT * FROM product WHERE product_id = ?", productId).Scan(&products).Error; err != nil {
+func (p *ProductRepo) GetProductById(productId uint) (products []entity.Product, err error) {
+	if err = p.DB.Raw(query.GetProductById(), productId).Scan(&products).Error; err != nil {
 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
 	}
 	return
 }
 
-func (p ProductRepo) GetProductByArticle(article uint) (products []entity.Product, err error) {
-	if err = p.DB.Raw("SELECT * FROM product WHERE article = ?", article).Scan(&products).Error; err != nil {
+func (p *ProductRepo) GetProductByArticle(article uint) (products []entity.Product, err error) {
+	if err = p.DB.Raw(query.GetProductByArticle(), article).Scan(&products).Error; err != nil {
 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
 	}
 	return

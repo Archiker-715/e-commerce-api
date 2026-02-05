@@ -19,9 +19,9 @@ func NewProductHandler(service uc.ProductService) *ProductHandler {
 	return &ProductHandler{product: &service}
 }
 
-var convertQueryParamError error = errors.New("failed convert to uint query param")
+var convertQueryParamError error = errors.New("convert to uint query param")
 
-func (p *ProductHandler) GetProduct(w http.ResponseWriter, r http.Request) {
+func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	productId, prodErr := toUint(r.URL.Query().Get("productId"))
 	if errors.Is(prodErr, convertQueryParamError) {
@@ -43,13 +43,13 @@ func (p *ProductHandler) GetProduct(w http.ResponseWriter, r http.Request) {
 	httpsrv.JsonEncode(w, &products, 0)
 }
 
-func toUint(input string) (uint, error) {
-	if input == "" {
+func toUint(queryParam string) (uint, error) {
+	if queryParam == "" {
 		return 0, nil
 	} else {
-		u, err := strconv.Atoi(input)
+		u, err := strconv.Atoi(queryParam)
 		if err != nil {
-			return 0, convertQueryParamError
+			return 0, fmt.Errorf("%w: %w", err, convertQueryParamError)
 		}
 		return uint(u), nil
 	}
