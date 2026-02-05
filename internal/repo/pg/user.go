@@ -24,3 +24,10 @@ func (a *AuthRepo) GetUserByLogPass(login string, password []byte) (uuid.UUID, e
 	}
 	return user.UserId, nil
 }
+
+func (a *AuthRepo) CreateUser(user entity.User) error {
+	if err := a.DB.Raw(query.CreateUser(), user.UserId, user.Login, user.Password).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}

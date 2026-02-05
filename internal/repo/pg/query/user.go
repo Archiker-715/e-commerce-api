@@ -10,3 +10,17 @@ func GetUserByLogPass() string {
 			u.user_login = ? AND u.user_password = ?`
 	return query
 }
+
+func CreateUser() string {
+	query :=
+		`INSERT INTO users(
+			user_id,
+			user_login,
+			user_password
+		)
+		SELECT 
+			?,
+			?,
+			?`
+	return query
+}
