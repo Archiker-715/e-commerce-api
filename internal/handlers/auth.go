@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
@@ -24,4 +25,10 @@ func (a *AuthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authResp, err := a.auth.Authorize(authData)
+	if err != nil {
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("auth error: %v", err))
+	}
+
+	httpsrv.JsonEncode(w, &authResp, 0)
 }
