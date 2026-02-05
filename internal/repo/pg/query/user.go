@@ -7,7 +7,7 @@ func GetUserByLogPass() string {
 		FROM 
 			users u
 		WHERE
-			u.user_login = ? AND u.user_password = ?`
+			u.user_login = ? AND u.user_password = ?;`
 	return query
 }
 
@@ -21,6 +21,6 @@ func CreateUser() string {
 		SELECT 
 			?,
 			?,
-			?`
+			?;`
 	return query
 }

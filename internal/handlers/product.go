@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Archiker-715/e-commerce-api/internal/entity"
+	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/errs"
 	uc "github.com/Archiker-715/e-commerce-api/internal/usecase"
 	"github.com/Archiker-715/e-commerce-api/pkg/httpsrv"
@@ -22,7 +24,6 @@ func NewProductHandler(service uc.ProductService) *ProductHandler {
 var convertQueryParamError error = errors.New("convert to uint query param")
 
 func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	productId, prodErr := toUint(r.URL.Query().Get("productId"))
 	if errors.Is(prodErr, convertQueryParamError) {
 		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("%v productId", prodErr))
@@ -34,6 +35,7 @@ func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
 	products, err := p.product.GetProduct(ctx, uint(productId), uint(article))
 	if err != nil {
 		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("get product: %v", err))
@@ -41,6 +43,22 @@ func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpsrv.JsonEncode(w, &products, 0)
+}
+
+func (p *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	var product entity.CreateProduct
+	if err := httpsrv.JsonDecode(w, r, &product, 0); err != nil {
+		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("failed to parse input: %v", err))
+		return
+	}
+
+	ctx := r.Context()
+	productId, err := p.product.CreateProduct(ctx, product)
+	if err != nil {
+		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("create product: %v", err))
+		return
+	}
+	httpsrv.JsonEncode(w, &common.Id{Id: productId}, 0)
 }
 
 func toUint(queryParam string) (uint, error) {

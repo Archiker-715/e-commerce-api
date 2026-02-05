@@ -36,3 +36,10 @@ func (p *ProductRepo) GetProductByArticle(article uint) (products []entity.Produ
 	}
 	return
 }
+
+// func (p *ProductRepo) CreateProduct(product entity.CreateProduct) (productId int, err error) {
+// 	if err = p.DB.Raw(query.GetProductByArticle(), article).Scan(&products).Error; err != nil {
+// 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
+// 	}
+// 	return
+// }
