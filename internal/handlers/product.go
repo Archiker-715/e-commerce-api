@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
-	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/errs"
 	uc "github.com/Archiker-715/e-commerce-api/internal/usecase"
 	"github.com/Archiker-715/e-commerce-api/pkg/httpsrv"
@@ -58,7 +57,7 @@ func (p *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("create product: %v", err))
 		return
 	}
-	httpsrv.JsonEncode(w, &common.Id{Id: productId}, 0)
+	httpsrv.JsonEncode(w, &productId, 0)
 }
 
 func toUint(queryParam string) (uint, error) {

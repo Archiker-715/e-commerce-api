@@ -91,6 +91,8 @@ func CreateProduct() string {
 			?,
 			?,
 			?,
-			?;`
+			?
+		RETURNING 
+			product_id;`
 	return query
 }

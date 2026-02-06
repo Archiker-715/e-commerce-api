@@ -37,9 +37,20 @@ func (p *ProductRepo) GetProductByArticle(article uint) (products []entity.Produ
 	return
 }
 
-// func (p *ProductRepo) CreateProduct(product entity.CreateProduct) (productId int, err error) {
-// 	if err = p.DB.Raw(query.GetProductByArticle(), article).Scan(&products).Error; err != nil {
-// 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
-// 	}
-// 	return
-// }
+func (p *ProductRepo) CreateProduct(pr entity.Product) (productId int, err error) {
+	if err = p.DB.Raw(query.CreateProduct(),
+		pr.Name,
+		pr.Description,
+		pr.Category,
+		pr.Price,
+		pr.Count,
+		pr.Active,
+		pr.Options,
+		pr.Article,
+		pr.InsertedBy,
+		pr.Inserted,
+	).Error; err != nil {
+		return 0, fmt.Errorf("DB err: %w", err)
+	}
+	return
+}
