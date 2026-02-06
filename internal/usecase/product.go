@@ -31,7 +31,7 @@ func (p *ProductService) GetProduct(ctx context.Context, productId, article uint
 	return p.repo.GetProducts()
 }
 
-func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProduct) (productId common.Id, err error) {
+func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProduct) (common.Id, error) {
 	genArticle := func() string {
 		r := rand.Intn(25 + 1)
 		upperR := byte('A' + r)
@@ -65,4 +65,24 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 		return common.Id{Id: productId}, nil
 	}
 	return common.Id{}, errors.New("duplicate error when generate article")
+}
+
+func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr entity.UpdateProduct) (common.Id, error) {
+	updateProduct := entity.Product{
+		Name:        pr.Name,
+		Description: pr.Description,
+		Category:    pr.Category,
+		Price:       pr.Price,
+		Count:       pr.Count,
+		Active:      pr.Active,
+		Options:     pr.Options,
+		UpdatedBy:   auth.UserFromCtx(ctx),
+		Updated:     time.Now(),
+		ProductID:   productId,
+	}
+
+	if err := p.repo.UpdateProduct(updateProduct); err != nil {
+		return common.Id{}, err
+	}
+	return common.Id{Id: productId}, nil
 }
