@@ -7,17 +7,31 @@ import (
 	"gorm.io/gorm"
 )
 
-type CartRepo struct {
+type UserCartRepo struct {
 	DB *gorm.DB
 }
 
-func NewCartRepo(db *gorm.DB) *CartRepo {
-	return &CartRepo{DB: db}
+func NewUserCartRepo(db *gorm.DB) *UserCartRepo {
+	return &UserCartRepo{DB: db}
 }
 
-func (c *CartRepo) GetUserCart(userId uuid.UUID) (userCart []entity.Cart, err error) {
+func (c *UserCartRepo) GetUserCart(userId uuid.UUID) (userCart []entity.UserCart, err error) {
 	if err = c.DB.Raw(query.GetUserCart(), userId).Scan(&userCart).Error; err != nil {
-		return []entity.Cart{}, err
+		return []entity.UserCart{}, err
 	}
 	return
+}
+
+func (c *UserCartRepo) IncreaseProductInCart(productId uint, userId uuid.UUID) error {
+	if err := c.DB.Raw(query.IncreaseProductInCart(), productId, userId).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *UserCartRepo) DecreaseProductInCart(productId uint, userId uuid.UUID) error {
+	if err := c.DB.Raw(query.DecreaseProductInCart(), productId, userId, productId, userId).Error; err != nil {
+		return err
+	}
+	return nil
 }
