@@ -114,3 +114,11 @@ func UpdateProduct() string {
 			product_id = ?;`
 	return query
 }
+
+func DeleteProduct() string {
+	query :=
+		`DELETE FROM products
+		WHERE
+			product_id = ?;`
+	return query
+}

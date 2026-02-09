@@ -86,3 +86,7 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr e
 	}
 	return common.Id{Id: productId}, nil
 }
+
+func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) error {
+	return p.repo.DeleteProduct(productId)
+}

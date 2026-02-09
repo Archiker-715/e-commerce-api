@@ -14,8 +14,8 @@ type Product struct {
 	Price       uint64                 `json:"price" gorm:"column:price"`
 	Count       uint64                 `json:"count" gorm:"column:count"`
 	Active      bool                   `json:"active" gorm:"column:active"`
-	Options     map[string]interface{} `json:"options" gorm:"column:options;type:json"` // по идее сразу будет разобрано по json полям
-	Article     string                 `json:"article" gorm:"column:article;unique"`    // подумать над производительностью в части определения уникальности
+	Options     map[string]interface{} `json:"options" gorm:"column:options;type:json"`
+	Article     string                 `json:"article" gorm:"column:article;unique"`
 	InsertedBy  uuid.UUID              `json:"inserted_by" gorm:"column:inserted_by"`
 	Inserted    time.Time              `json:"inserted" gorm:"column:inserted"`
 	UpdatedBy   uuid.UUID              `json:"updated_by" gorm:"column:updated_by"`

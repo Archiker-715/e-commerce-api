@@ -22,7 +22,7 @@ func NewProductHandler(service uc.ProductService) *ProductHandler {
 }
 
 var convertQueryParamError error = errors.New("convert to uint query parameters")
-var emptyParamError error = errors.New("empty paramer")
+var emptyParamError error = errors.New("empty parameter")
 
 func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	productId, prodErr := toUint(r.URL.Query().Get("productId"))
@@ -32,14 +32,14 @@ func (p *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	article, artErr := toUint(r.URL.Query().Get("article"))
 	if errors.Is(artErr, convertQueryParamError) {
-		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("%v article", artErr))
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("%v article", artErr))
 		return
 	}
 
 	ctx := r.Context()
 	products, err := p.product.GetProduct(ctx, uint(productId), uint(article))
 	if err != nil {
-		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("get product: %v", err))
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("get product: %v", err))
 		return
 	}
 
@@ -56,7 +56,7 @@ func (p *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	productId, err := p.product.CreateProduct(ctx, product)
 	if err != nil {
-		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("create product: %v", err))
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("create product: %v", err))
 		return
 	}
 	httpsrv.JsonEncode(w, &productId, 0)
@@ -79,10 +79,26 @@ func (p *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	updatedProd, err := p.product.UpdateProduct(ctx, productId, product)
 	if err != nil {
-		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("Update product: %v", err))
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("Update product: %v", err))
 		return
 	}
 	httpsrv.JsonEncode(w, &updatedProd, 0)
+}
+
+func (p *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	productId, err := toUint(vars["productId"])
+	if errors.Is(err, convertQueryParamError) || errors.Is(err, emptyParamError) {
+		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("%v productId", err))
+		return
+	}
+
+	ctx := r.Context()
+	if err := p.product.DeleteProduct(ctx, productId); err != nil {
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("Update product: %v", err))
+		return
+	}
+	fmt.Fprintln(w, "OK")
 }
 
 func toUint(queryParam string) (uint, error) {
