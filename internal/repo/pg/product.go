@@ -72,3 +72,10 @@ func (p *ProductRepo) UpdateProduct(pr entity.Product) error {
 	}
 	return nil
 }
+
+func (p *ProductRepo) DeleteProduct(productId uint) error {
+	if err := p.DB.Raw(query.DeleteProduct(), productId).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
