@@ -21,6 +21,14 @@ func (c *UserCartService) GetUserCart(ctx context.Context) ([]entity.UserCart, e
 	return c.repo.GetUserCart(auth.UserFromCtx(ctx))
 }
 
+func (c *UserCartService) AddProductToCart(ctx context.Context, productId uint) error {
+	return c.repo.AddProductToCart(productId, auth.UserFromCtx(ctx))
+}
+
+func (c *UserCartService) DeleteProductFromCart(ctx context.Context, productId uint) error {
+	return c.repo.DeleteProductFromCart(productId, auth.UserFromCtx(ctx))
+}
+
 func (c *UserCartService) ChangeProductCount(ctx context.Context, productId uint, action string) error {
 	switch action {
 	case "increase":

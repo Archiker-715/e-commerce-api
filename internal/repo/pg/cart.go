@@ -22,6 +22,20 @@ func (c *UserCartRepo) GetUserCart(userId uuid.UUID) (userCart []entity.UserCart
 	return
 }
 
+func (c *UserCartRepo) AddProductToCart(productId uint, userId uuid.UUID) error {
+	if err := c.DB.Raw(query.AddProductToCart(), userId, productId).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *UserCartRepo) DeleteProductFromCart(productId uint, userId uuid.UUID) error {
+	if err := c.DB.Raw(query.DeleteProductFromCart(), productId, userId).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *UserCartRepo) IncreaseProductInCart(productId uint, userId uuid.UUID) error {
 	if err := c.DB.Raw(query.IncreaseProductInCart(), productId, userId).Error; err != nil {
 		return err

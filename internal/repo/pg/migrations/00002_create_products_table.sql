@@ -3,7 +3,7 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     description TEXT,
     category TEXT NOT NULL,
-    price BIGINT NOT NULL,
+    unit_price BIGINT NOT NULL,
     count BIGINT NOT NULL,
     active BOOLEAN NOT NULL,
     options JSONB,

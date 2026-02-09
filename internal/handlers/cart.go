@@ -29,6 +29,38 @@ func (c *CartHandler) GetUserCart(w http.ResponseWriter, r *http.Request) {
 	httpsrv.JsonEncode(w, &userCart, 0)
 }
 
+func (c *CartHandler) AddProductToCart(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	productId, err := toUint(vars["productId"])
+	if errors.Is(err, convertQueryParamError) || errors.Is(err, emptyParamError) {
+		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("%v productId", err))
+		return
+	}
+
+	ctx := r.Context()
+	if err := c.cart.AddProductToCart(ctx, productId); err != nil {
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("%v", err))
+		return
+	}
+	fmt.Fprintln(w, "OK")
+}
+
+func (c *CartHandler) DeleteProductFromCart(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	productId, err := toUint(vars["productId"])
+	if errors.Is(err, convertQueryParamError) || errors.Is(err, emptyParamError) {
+		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("%v productId", err))
+		return
+	}
+
+	ctx := r.Context()
+	if err := c.cart.DeleteProductFromCart(ctx, productId); err != nil {
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("%v", err))
+		return
+	}
+	fmt.Fprintln(w, "OK")
+}
+
 func (c *CartHandler) ChangeProductCount(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	action := vars["action"]

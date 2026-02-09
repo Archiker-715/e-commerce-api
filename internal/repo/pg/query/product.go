@@ -70,16 +70,16 @@ func GetProductByArticle() string {
 func CreateProduct() string {
 	query :=
 		`INSERT INTO products(
-			p.name,
-			p.description,
-			p.category,
-			p.price,
-			p.count,
-			p.active,
-			p.options,
-			p.article,
-			p.inserted_by,
-			p.inserted
+			name,
+			description,
+			category,
+			price,
+			count,
+			active,
+			options,
+			article,
+			inserted_by,
+			inserted
 		)
 		SELECT 
 			?,
