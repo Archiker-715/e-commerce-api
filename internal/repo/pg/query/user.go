@@ -16,9 +16,13 @@ func CreateUser() string {
 		`INSERT INTO users(
 			user_id,
 			user_login,
-			user_password
+			user_password,
+			inserted_by,
+			inserted
 		)
 		SELECT 
+			?,
+			?,
 			?,
 			?,
 			?;`

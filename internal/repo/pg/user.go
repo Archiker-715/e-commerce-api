@@ -2,6 +2,8 @@ package pg
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg/query"
@@ -26,7 +28,7 @@ func (a *AuthRepo) GetUserByLogPass(login string, password []byte) (uuid.UUID, e
 }
 
 func (a *AuthRepo) CreateUser(user entity.User) error {
-	if err := a.DB.Raw(query.CreateUser(), user.UserId, user.Login, user.Password).Error; err != nil {
+	if err := a.DB.Raw(query.CreateUser(), user.UserId, user.Login, user.Password, os.Getenv("API_UUID"), time.Now()).Error; err != nil {
 		return fmt.Errorf("DB err: %w", err)
 	}
 	return nil
