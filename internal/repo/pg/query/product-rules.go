@@ -7,9 +7,27 @@ func CheckPermission() string {
 			FROM 
 				product_rules pr
 			JOIN 
-				users_groups ON pr.group_id = ug.group_id
+				users_markets um ON pr.market_id = um.market_id
 			WHERE
-				ug.user_id = ? AND pr.rule = ?
+				um.user_id = ? AND pr.rule = ?
 		);`
+	return query
+}
+
+func AddPermission() string {
+	query :=
+		`INSERT INTO product_rules(
+			product_id,
+			market_id,
+			rule,
+			inserted,
+			inserted_by
+		)
+		SELECT 
+			?,
+			?,
+			?,
+			?,
+			?;`
 	return query
 }

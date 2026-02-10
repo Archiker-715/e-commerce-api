@@ -20,3 +20,11 @@ func (p *ProductRulesRepo) CheckPermission(userId uuid.UUID, permission string) 
 	}
 	return
 }
+
+// func (p *ProductRulesRepo) AddPermission(userId uuid.UUID, permission string) error {
+
+// }
+
+// func (p *ProductRulesRepo) DeletePermission(userId uuid.UUID, permission string) error {
+
+// }

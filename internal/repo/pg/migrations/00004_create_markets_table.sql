@@ -1,5 +1,5 @@
-CREATE TABLE acl_groups (
-    group_id UUID NOT NULL,
+CREATE TABLE markets (
+    market_id UUID NOT NULL,
     inserted_by UUID,
     inserted TIMESTAMP,
     updated_by UUID,
