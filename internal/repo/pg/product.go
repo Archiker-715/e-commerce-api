@@ -49,7 +49,7 @@ func (p *ProductRepo) CreateProduct(pr entity.Product) (productId uint, err erro
 		pr.Article,
 		pr.InsertedBy,
 		pr.Inserted,
-	).Error; err != nil {
+	).Scan(&productId).Error; err != nil {
 		return 0, fmt.Errorf("DB err: %w", err)
 	}
 	return

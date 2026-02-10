@@ -11,18 +11,37 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-type ProductService struct {
-	repo *pg.ProductRepo
+type RulesRepo interface {
+	CheckPermission(userId uuid.UUID, permission string) (hasPerm bool, err error)
 }
 
-func NewProductService(repo *pg.ProductRepo) *ProductService {
-	return &ProductService{repo: repo}
+type ProductService struct {
+	repo      *pg.ProductRepo
+	rulesRepo RulesRepo
 }
+
+func NewProductService(repo *pg.ProductRepo, rRepo RulesRepo) *ProductService {
+	return &ProductService{
+		repo:      repo,
+		rulesRepo: rRepo,
+	}
+}
+
+var forbiddenError error = errors.New("not enough rights")
 
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "READ")
+	if err != nil {
+		return []entity.Product{}, err
+	}
+	if !ok {
+		return []entity.Product{}, forbiddenError
+	}
+
 	if productId != 0 {
 		return p.repo.GetProductById(productId)
 	} else if article != 0 {
@@ -38,6 +57,14 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 		lowerR := byte('a' + r)
 		r2 := rand.Intn(10000000)
 		return fmt.Sprintf("%v%v-%d", upperR, lowerR, r2)
+	}
+
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "INSERT")
+	if err != nil {
+		return common.Id{}, err
+	}
+	if !ok {
+		return common.Id{}, forbiddenError
 	}
 
 	newProduct := entity.Product{
@@ -68,6 +95,14 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 }
 
 func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr entity.UpdateProduct) (common.Id, error) {
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "UPDATE")
+	if err != nil {
+		return common.Id{}, err
+	}
+	if !ok {
+		return common.Id{}, forbiddenError
+	}
+
 	updateProduct := entity.Product{
 		Name:        pr.Name,
 		Description: pr.Description,
@@ -88,5 +123,12 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr e
 }
 
 func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) error {
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "DELETE")
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return forbiddenError
+	}
 	return p.repo.DeleteProduct(productId)
 }
