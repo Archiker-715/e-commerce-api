@@ -1,5 +1,5 @@
 CREATE TABLE admin_product_rules (
-    user_id UUID NOT NULL,
+    user_id UUID NOT NULL UNIQUE,
     inserted_by UUID,
     inserted TIMESTAMP,
     updated_by UUID,
