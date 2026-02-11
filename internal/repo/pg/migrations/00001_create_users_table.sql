@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    user_id UUID NOT NULL,
+    user_id UUID PRIMARY KEY,
     login VARCHAR(30) NOT NULL UNIQUE,
     password BYTEA,
     inserted_by UUID,

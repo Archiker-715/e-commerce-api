@@ -1,6 +1,6 @@
 CREATE TABLE users_markets (
     user_id UUID NOT NULL,
-    market_id BIGINT NOT NULL,
+    market_id BIGINT PRIMARY KEY,
     market_owner_user_id UUID,
     inserted_by UUID,
     inserted TIMESTAMP,

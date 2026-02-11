@@ -8,7 +8,8 @@ CREATE TABLE users_cart (
     CONSTRAINT fk_product
         FOREIGN KEY (product_id)
         REFERENCES product (product_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    PRIMARY KEY (user_id, product_id)
 );
 
 CREATE FUNCTION check_product_quantity()
