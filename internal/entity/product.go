@@ -7,7 +7,8 @@ import (
 )
 
 type Product struct {
-	ProductID   uint                   `json:"id" gorm:"primaryKey;autoIncrement;column:product_id"`
+	ProductID   uint                   `json:"productId" gorm:"primaryKey;autoIncrement;column:product_id"`
+	MarketId    uint                   `json:"marketId" gorm:"primaryKey;autoIncrement;column:market_id"`
 	Name        string                 `json:"name" gorm:"column:name"`
 	Description string                 `json:"descr" gorm:"column:description"`
 	Category    string                 `json:"category" gorm:"column:category"`
@@ -23,6 +24,7 @@ type Product struct {
 }
 
 type CreateProduct struct {
+	MarketId    uint                   `json:"marketId"`
 	Name        string                 `json:"name"`
 	Description string                 `json:"descr"`
 	Category    string                 `json:"category"`

@@ -9,25 +9,19 @@ func CheckPermission() string {
 			JOIN 
 				users_markets um ON pr.market_id = um.market_id
 			WHERE
-				um.user_id = ? AND pr.rule = ?
+				um.user_id = ? AND pr.rule = 'OWN'
 		);`
 	return query
 }
 
-func AddPermission() string {
+func UserInMarket() string {
 	query :=
-		`INSERT INTO product_rules(
-			product_id,
-			market_id,
-			rule,
-			inserted,
-			inserted_by
-		)
-		SELECT 
-			?,
-			?,
-			?,
-			?,
-			?;`
+		`SELECT EXISTS (
+			SELECT 1
+			FROM 
+				users_markets um
+			WHERE
+				um.user_id = ? AND um.market_id = ?
+		);`
 	return query
 }

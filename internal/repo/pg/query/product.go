@@ -69,31 +69,47 @@ func GetProductByArticle() string {
 
 func CreateProduct() string {
 	query :=
-		`INSERT INTO products(
-			name,
-			description,
-			category,
-			price,
-			count,
-			active,
-			options,
-			article,
+		`WITH newProduct AS (
+			INSERT INTO products(
+				name,
+				description,
+				category,
+				price,
+				count,
+				active,
+				options,
+				article,
+				inserted_by,
+				inserted
+			)
+			SELECT 
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?
+			RETURNING 
+				product_id, inserted_by, inserted
+		)
+		INSERT INTO product_rules (
+			product_id,
+			market_id,
+			rule,
 			inserted_by,
 			inserted
 		)
-		SELECT 
+		SELECT
+			product_id,
 			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?
-		RETURNING 
-			product_id;`
+			'OWN',
+			inserted_by,
+			inserted
+			;`
 	return query
 }
 

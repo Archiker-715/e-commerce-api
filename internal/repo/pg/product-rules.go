@@ -14,17 +14,16 @@ func NewProductRulesRepo(db *gorm.DB) *ProductRulesRepo {
 	return &ProductRulesRepo{DB: db}
 }
 
-func (p *ProductRulesRepo) CheckPermission(userId uuid.UUID, permission string) (hasPerm bool, err error) {
-	if err = p.DB.Raw(query.CheckPermission(), userId, permission).Scan(&hasPerm).Error; err != nil {
+func (p *ProductRulesRepo) CheckPermission(userId uuid.UUID) (hasPerm bool, err error) {
+	if err = p.DB.Raw(query.CheckPermission(), userId).Scan(&hasPerm).Error; err != nil {
 		return false, err
 	}
 	return
 }
 
-// func (p *ProductRulesRepo) AddPermission(userId uuid.UUID, permission string) error {
-
-// }
-
-// func (p *ProductRulesRepo) DeletePermission(userId uuid.UUID, permission string) error {
-
-// }
+func (p *ProductRulesRepo) UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error) {
+	if err = p.DB.Raw(query.UserInMarket(), userId, marketId).Scan(&inMarket).Error; err != nil {
+		return false, err
+	}
+	return
+}

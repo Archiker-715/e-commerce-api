@@ -16,7 +16,8 @@ import (
 )
 
 type RulesRepo interface {
-	CheckPermission(userId uuid.UUID, permission string) (hasPerm bool, err error)
+	CheckPermission(userId uuid.UUID) (hasPerm bool, err error)
+	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
 }
 
 type ProductService struct {
@@ -34,7 +35,7 @@ func NewProductService(repo *pg.ProductRepo, rRepo RulesRepo) *ProductService {
 var forbiddenError error = errors.New("not enough rights")
 
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "READ")
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
 	if err != nil {
 		return []entity.Product{}, err
 	}
@@ -59,15 +60,17 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 		return fmt.Sprintf("%v%v-%d", upperR, lowerR, r2)
 	}
 
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "INSERT")
+	var productId common.Id
+	ok, err := p.rulesRepo.UserInMarket(auth.UserFromCtx(ctx), pr.MarketId)
 	if err != nil {
-		return common.Id{}, err
+		return productId, err
 	}
 	if !ok {
-		return common.Id{}, forbiddenError
+		return productId, forbiddenError
 	}
 
 	newProduct := entity.Product{
+		MarketId:    pr.MarketId,
 		Name:        pr.Name,
 		Description: pr.Description,
 		Category:    pr.Category,
@@ -82,25 +85,26 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 	for i := 0; i < maxAttempts; i++ {
 		newProduct.Article = genArticle()
 		newProduct.Inserted = time.Now()
-		productId, err := p.repo.CreateProduct(newProduct)
+		id, err := p.repo.CreateProduct(newProduct)
 		if err != nil {
 			if errors.Is(err, gorm.ErrDuplicatedKey) {
 				continue
 			}
-			return common.Id{}, err
+			return productId, err
 		}
-		return common.Id{Id: productId}, nil
+		return common.Id{Id: id}, nil
 	}
-	return common.Id{}, errors.New("duplicate error when generate article")
+	return productId, errors.New("duplicate error when generate article")
 }
 
 func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr entity.UpdateProduct) (common.Id, error) {
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "UPDATE")
+	var prId common.Id
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
 	if err != nil {
-		return common.Id{}, err
+		return prId, err
 	}
 	if !ok {
-		return common.Id{}, forbiddenError
+		return prId, forbiddenError
 	}
 
 	updateProduct := entity.Product{
@@ -117,13 +121,13 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr e
 	}
 
 	if err := p.repo.UpdateProduct(updateProduct); err != nil {
-		return common.Id{}, err
+		return prId, err
 	}
 	return common.Id{Id: productId}, nil
 }
 
 func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) error {
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx), "DELETE")
+	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
 	if err != nil {
 		return err
 	}

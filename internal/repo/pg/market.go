@@ -16,9 +16,8 @@ func NewMarketRepo(db *gorm.DB) *MarketRepo {
 	return &MarketRepo{DB: db}
 }
 
-func (m *MarketRepo) AddMarket(userId, newMarketId uuid.UUID, marketName string) error {
+func (m *MarketRepo) AddMarket(userId uuid.UUID, marketName string) error {
 	if err := m.DB.Raw(query.AddMarket(),
-		newMarketId,
 		marketName,
 		userId,
 		time.Now(),
@@ -29,14 +28,22 @@ func (m *MarketRepo) AddMarket(userId, newMarketId uuid.UUID, marketName string)
 	return nil
 }
 
-func (m *MarketRepo) LinkUserMarket(userId uuid.UUID, marketId uuid.UUID) error {
+func (m *MarketRepo) LinkUserMarket(userIdToLink uuid.UUID, marketId uint) error {
 	if err := m.DB.Raw(query.LinkUserMarket(),
-		userId,
+		userIdToLink,
 		marketId,
-		userId,
+		userIdToLink,
 		time.Now(),
 	).Error; err != nil {
 		return err
 	}
 	return nil
+}
+
+func (m *MarketRepo) CheckOwner(userFromCtx uuid.UUID, marketId uint) (bool, error) {
+	var owner bool
+	if err := m.DB.Raw(query.CheckOwner(), userFromCtx, marketId).Scan(&owner).Error; err != nil {
+		return false, err
+	}
+	return owner, nil
 }

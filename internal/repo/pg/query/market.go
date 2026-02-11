@@ -4,13 +4,11 @@ func AddMarket() string {
 	query :=
 		`WITH newMarket AS (
 			INSERT INTO markets(
-				market_id,
 				market_name,
 				inserted_by,
 				inserted
 				)
 			SELECT 
-				?,
 				?,
 				?,
 				?
@@ -19,12 +17,14 @@ func AddMarket() string {
 		INSERT INTO users_markets(
 			user_id,
 			market_id,
+			market_owner_user_id,
 			inserted_by,
 			inserted
 			)
 			SELECT 
 				?,
 				market_id,
+				inserted_by,
 				inserted_by,
 				inserted
 				;`
@@ -42,8 +42,20 @@ func LinkUserMarket() string {
 			SELECT 
 				?,
 				?,
-				inserted_by,
-				inserted
+				?,
+				?
 				;`
+	return query
+}
+
+func CheckOwner() string {
+	query :=
+		`SELECT EXISTS (
+			SELECT 1
+			FROM 
+				users_markets um
+			WHERE
+				um.market_id = ? AND market_owner_user_id = ?
+		);`
 	return query
 }
