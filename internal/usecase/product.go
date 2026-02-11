@@ -16,7 +16,7 @@ import (
 )
 
 type RulesRepo interface {
-	CheckPermission(userId uuid.UUID) (hasPerm bool, err error)
+	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
 	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
 }
 
@@ -35,7 +35,7 @@ func NewProductService(repo *pg.ProductRepo, rRepo RulesRepo) *ProductService {
 var forbiddenError error = errors.New("not enough rights")
 
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
+	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
 	if err != nil {
 		return []entity.Product{}, err
 	}
@@ -99,7 +99,7 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 
 func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr entity.UpdateProduct) (common.Id, error) {
 	var prId common.Id
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
+	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
 	if err != nil {
 		return prId, err
 	}
@@ -127,7 +127,7 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr e
 }
 
 func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) error {
-	ok, err := p.rulesRepo.CheckPermission(auth.UserFromCtx(ctx))
+	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
 	if err != nil {
 		return err
 	}

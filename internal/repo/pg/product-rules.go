@@ -14,8 +14,8 @@ func NewProductRulesRepo(db *gorm.DB) *ProductRulesRepo {
 	return &ProductRulesRepo{DB: db}
 }
 
-func (p *ProductRulesRepo) CheckPermission(userId uuid.UUID) (hasPerm bool, err error) {
-	if err = p.DB.Raw(query.CheckPermission(), userId).Scan(&hasPerm).Error; err != nil {
+func (p *ProductRulesRepo) PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error) {
+	if err = p.DB.Raw(query.PermOnProduct(), userId, productId).Scan(&hasPerm).Error; err != nil {
 		return false, err
 	}
 	return

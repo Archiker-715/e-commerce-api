@@ -1,6 +1,6 @@
 package query
 
-func CheckPermission() string {
+func PermOnProduct() string {
 	query :=
 		`SELECT EXISTS (
 			SELECT 1
@@ -9,7 +9,7 @@ func CheckPermission() string {
 			JOIN 
 				users_markets um ON pr.market_id = um.market_id
 			WHERE
-				um.user_id = ? AND pr.rule = 'OWN'
+				um.user_id = ? AND pr.product_id = ? AND pr.rule = 'OWN'
 		);`
 	return query
 }
