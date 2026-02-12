@@ -7,13 +7,13 @@ import (
 )
 
 type User struct {
-	UserId     uuid.UUID `gorm:"unique"`
-	Login      string    `gorm:"unique"`
+	UserId     uuid.UUID
+	Login      string
 	Password   []byte
-	InsertedBy uuid.UUID `json:"inserted_by" gorm:"column:inserted_by"`
-	Inserted   time.Time `json:"inserted" gorm:"column:inserted"`
-	UpdatedBy  uuid.UUID `json:"updated_by" gorm:"column:updated_by"`
-	Updated    time.Time `json:"updated" gorm:"column:updated"`
+	InsertedBy uuid.UUID `json:"inserted_by"`
+	Inserted   time.Time `json:"inserted"`
+	UpdatedBy  uuid.UUID `json:"updated_by"`
+	Updated    time.Time `json:"updated"`
 }
 
 type UserAuthRegistration struct {
