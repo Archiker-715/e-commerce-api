@@ -18,6 +18,7 @@ import (
 type RulesRepo interface {
 	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
 	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
+	AdminRole(userId uuid.UUID) (adm bool, err error)
 }
 
 type ProductService struct {
@@ -37,10 +38,10 @@ var forbiddenError error = errors.New("not enough rights")
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
 	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
 	if err != nil {
-		return []entity.Product{}, err
+		return nil, err
 	}
 	if !ok {
-		return []entity.Product{}, forbiddenError
+		return nil, forbiddenError
 	}
 
 	if productId != 0 {
@@ -81,7 +82,7 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 		InsertedBy:  auth.UserFromCtx(ctx),
 	}
 
-	var maxAttempts = 5
+	var maxAttempts = 10
 	for i := 0; i < maxAttempts; i++ {
 		newProduct.Article = genArticle()
 		newProduct.Inserted = time.Now()
@@ -97,8 +98,19 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 	return productId, errors.New("duplicate error when generate article")
 }
 
-func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr entity.UpdateProduct) (common.Id, error) {
+func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, updPr entity.UpdateProduct) (common.Id, error) {
 	var prId common.Id
+	adm, err := p.rulesRepo.AdminRole(auth.UserFromCtx(ctx))
+	if err != nil {
+		return prId, err
+	}
+	if adm {
+		if err := p.repo.UpdatePrice(productId, updPr.Price); err != nil {
+			return prId, err
+		}
+		return common.Id{Id: productId}, nil
+	}
+
 	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
 	if err != nil {
 		return prId, err
@@ -108,13 +120,13 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, pr e
 	}
 
 	updateProduct := entity.Product{
-		Name:        pr.Name,
-		Description: pr.Description,
-		Category:    pr.Category,
-		Price:       pr.Price,
-		Count:       pr.Count,
-		Active:      pr.Active,
-		Options:     pr.Options,
+		Name:        updPr.Name,
+		Description: updPr.Description,
+		Category:    updPr.Category,
+		Price:       updPr.Price,
+		Count:       updPr.Count,
+		Active:      updPr.Active,
+		Options:     updPr.Options,
 		UpdatedBy:   auth.UserFromCtx(ctx),
 		Updated:     time.Now(),
 		ProductID:   productId,

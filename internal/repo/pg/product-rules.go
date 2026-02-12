@@ -27,3 +27,10 @@ func (p *ProductRulesRepo) UserInMarket(userId uuid.UUID, marketId uint) (inMark
 	}
 	return
 }
+
+func (p *ProductRulesRepo) AdminRole(userId uuid.UUID) (adm bool, err error) {
+	if err = p.DB.Raw(query.AdminRole(), userId).Scan(&adm).Error; err != nil {
+		return false, err
+	}
+	return
+}

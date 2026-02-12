@@ -25,3 +25,15 @@ func UserInMarket() string {
 		);`
 	return query
 }
+
+func AdminRole() string {
+	query :=
+		`SELECT EXISTS (
+			SELECT 1
+			FROM 
+				admin_product_rules apr
+			WHERE
+				apr.user_id = ?
+		);`
+	return query
+}

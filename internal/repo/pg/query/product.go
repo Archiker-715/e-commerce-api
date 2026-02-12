@@ -138,3 +138,13 @@ func DeleteProduct() string {
 			product_id = ?;`
 	return query
 }
+
+func UpdatePrice() string {
+	query :=
+		`UPDATE products
+		SET
+			p.price = ?
+		WHERE
+			product_id = ?;`
+	return query
+}

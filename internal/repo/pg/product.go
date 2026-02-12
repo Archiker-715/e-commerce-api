@@ -80,3 +80,10 @@ func (p *ProductRepo) DeleteProduct(productId uint) error {
 	}
 	return nil
 }
+
+func (p *ProductRepo) UpdatePrice(productId, price uint) error {
+	if err := p.DB.Raw(query.UpdatePrice(), price, productId).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
