@@ -7,7 +7,7 @@ import (
 )
 
 type Product struct {
-	ProductID   uint                   `json:"productId"`
+	ProductID   uint
 	MarketId    uint                   `json:"marketId"`
 	Name        string                 `json:"name"`
 	Description string                 `json:"descr" `

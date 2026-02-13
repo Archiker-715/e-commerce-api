@@ -22,6 +22,13 @@ func (c *UserCartRepo) GetUserCart(userId uuid.UUID) (userCart []entity.UserCart
 	return
 }
 
+func (c *UserCartRepo) GetProductsFromCartById(userId uuid.UUID, productsId []uint) (userCart []entity.UserCart, err error) {
+	if err = c.DB.Raw(query.GetProductsFromCartById(), userId, productsId).Scan(&userCart).Error; err != nil {
+		return []entity.UserCart{}, err
+	}
+	return
+}
+
 func (c *UserCartRepo) AddProductToCart(productId uint, userId uuid.UUID) error {
 	if err := c.DB.Raw(query.AddProductToCart(), userId, productId).Error; err != nil {
 		return err
@@ -45,6 +52,13 @@ func (c *UserCartRepo) IncreaseProductInCart(productId uint, userId uuid.UUID) e
 
 func (c *UserCartRepo) DecreaseProductInCart(productId uint, userId uuid.UUID) error {
 	if err := c.DB.Raw(query.DecreaseProductInCart(), productId, userId, productId, userId).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *UserCartRepo) MarkOrdered(userId uuid.UUID, prIds []uint, orderId string) error {
+	if err := c.DB.Raw(query.MarkOrdered(), userId, prIds, orderId).Error; err != nil {
 		return err
 	}
 	return nil

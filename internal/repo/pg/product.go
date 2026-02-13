@@ -30,6 +30,13 @@ func (p *ProductRepo) GetProductById(productId uint) (products []entity.Product,
 	return
 }
 
+func (p *ProductRepo) GetProductsByIds(productId []uint) (products []entity.Product, err error) {
+	if err = p.DB.Raw(query.GetProductById(), productId).Scan(&products).Error; err != nil {
+		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
+	}
+	return
+}
+
 func (p *ProductRepo) GetProductByArticle(article uint) (products []entity.Product, err error) {
 	if err = p.DB.Raw(query.GetProductByArticle(), article).Scan(&products).Error; err != nil {
 		return []entity.Product{}, fmt.Errorf("DB err: %w", err)
@@ -83,6 +90,13 @@ func (p *ProductRepo) DeleteProduct(productId uint) error {
 
 func (p *ProductRepo) UpdatePrice(productId, price uint) error {
 	if err := p.DB.Raw(query.UpdatePrice(), price, productId).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
+
+func (p *ProductRepo) DecreaseProductCountFromOrder(decreaseProducts string) error {
+	if err := p.DB.Raw(query.DecreaseProductCountFromOrder(), decreaseProducts).Error; err != nil {
 		return fmt.Errorf("DB err: %w", err)
 	}
 	return nil

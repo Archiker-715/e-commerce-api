@@ -3,13 +3,28 @@ package query
 func GetUserCart() string {
 	query :=
 		`SELECT
+			uc.product_id,
 			uc.name,
 			uc.total_price,
 			uc.count,
 		FROM 
 			users_cart uc
 		WHERE
-			uc.user_id = ?;`
+			uc.user_id = ? AND uc.ordered = false;`
+	return query
+}
+
+func GetProductsFromCartById() string {
+	query :=
+		`SELECT
+			uc.product_id,
+			uc.name,
+			uc.total_price,
+			uc.count,
+		FROM 
+			users_cart uc
+		WHERE
+			uc.user_id = ? AND uc.product_id IN (?) AND uc.ordered = false;`
 	return query
 }
 
@@ -68,5 +83,17 @@ func DecreaseProductInCart() string {
 		DELETE FROM users_cart
 		WHERE	
 			count = 0 AND product_id = ? AND user_id = ?;`
+	return query
+}
+
+func MarkOrdered() string {
+	query :=
+		`UPDATE users_cart
+		SET
+			ordered = true
+		WHERE
+			user_id = ? 
+			AND product_id IN ().
+			AND order_id = ?;`
 	return query
 }

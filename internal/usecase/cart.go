@@ -17,8 +17,16 @@ func NewUserCartService(repo *pg.UserCartRepo) *UserCartService {
 	return &UserCartService{repo: repo}
 }
 
+type CartService interface {
+	MarkOrdered(ctx context.Context, prIds []uint, orderId string) error
+}
+
 func (c *UserCartService) GetUserCart(ctx context.Context) ([]entity.UserCart, error) {
 	return c.repo.GetUserCart(auth.UserFromCtx(ctx))
+}
+
+func (c *UserCartService) GetProductsFromCartById(ctx context.Context, productsId []uint) ([]entity.UserCart, error) {
+	return c.repo.GetProductsFromCartById(auth.UserFromCtx(ctx), productsId)
 }
 
 func (c *UserCartService) AddProductToCart(ctx context.Context, productId uint) error {
@@ -37,4 +45,8 @@ func (c *UserCartService) ChangeProductCount(ctx context.Context, productId uint
 		return c.repo.DecreaseProductInCart(productId, auth.UserFromCtx(ctx))
 	}
 	return errors.New("change param is not in increase or decrease")
+}
+
+func (c *UserCartService) MarkOrdered(ctx context.Context, prIds []uint, orderId string) error {
+	return c.repo.MarkOrdered(auth.UserFromCtx(ctx), prIds, orderId)
 }

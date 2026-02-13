@@ -44,6 +44,29 @@ func GetProductById() string {
 	return query
 }
 
+func GetProductsByIds() string {
+	query :=
+		`SELECT
+			p.product_id,
+			p.name,
+			p.description,
+			p.category,
+			p.price,
+			p.count,
+			p.active,
+			p.options,
+			p.article,
+			p.inserted_by,
+			p.inserted,
+			p.updated_by,
+			p.updated
+		FROM 
+			products p
+		WHERE
+			p.product_id IN (?);`
+	return query
+}
+
 func GetProductByArticle() string {
 	query :=
 		`SELECT
@@ -143,8 +166,23 @@ func UpdatePrice() string {
 	query :=
 		`UPDATE products
 		SET
-			p.price = ?
+			price = ?
 		WHERE
 			product_id = ?;`
+	return query
+}
+
+func DecreaseProductCountFromOrder() string {
+	query :=
+		`WITH decrease AS (
+			VALUES ?
+			)
+		UPDATE products p
+		SET
+			count = p.count - d.column2
+		FROM 
+			decrease d(id, decrement)
+		WHERE
+			p.id = u.id;`
 	return query
 }

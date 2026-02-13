@@ -5,32 +5,30 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-type RulesRepo interface {
-	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
-	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
-	AdminRole(userId uuid.UUID) (adm bool, err error)
-}
-
 type ProductService struct {
 	repo      *pg.ProductRepo
-	rulesRepo RulesRepo
+	rulesRepo pg.RulesRepo
 }
 
-func NewProductService(repo *pg.ProductRepo, rRepo RulesRepo) *ProductService {
+func NewProductService(repo *pg.ProductRepo, rRepo pg.RulesRepo) *ProductService {
 	return &ProductService{
 		repo:      repo,
 		rulesRepo: rRepo,
 	}
+}
+
+type ProdService interface {
+	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error
 }
 
 var forbiddenError error = errors.New("not enough rights")
@@ -147,4 +145,24 @@ func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) erro
 		return forbiddenError
 	}
 	return p.repo.DeleteProduct(productId)
+}
+
+func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error {
+	products, err := p.repo.GetProductsByIds(prIds)
+	if err != nil {
+		return err
+	}
+
+	var sqlVals string
+	for _, pr := range products {
+		for _, prToOrd := range prsToOrder {
+			if pr.Count < prToOrd.CountInOrder {
+				return fmt.Errorf("not enough count product %q on stock. Available: %d, in order: %d", pr.Name, pr.Count, prToOrd.CountInOrder)
+			}
+			sqlVals += fmt.Sprintf("(%v, %v),", pr.ProductID, prToOrd.CountInOrder)
+		}
+	}
+	sqlVals = strings.TrimRight(sqlVals, ",")
+
+	return p.repo.DecreaseProductCountFromOrder(sqlVals)
 }

@@ -29,6 +29,5 @@ func (m *MarketService) LinkUserMarket(ctx context.Context, link entity.LinkUser
 	if !owner {
 		return errors.New("forbidden request. Current user is not the market owner")
 	}
-
 	return m.repo.LinkUserMarket(link.UserToLink, link.MarketId)
 }
