@@ -49,10 +49,13 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 		productIds = append(productIds, product.ProductID)
 	}
 
+	// зарезервировать товары
 	if err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder); err != nil {
 		return fmt.Errorf("error when decrease prods in stock: %w", err)
 	}
 
+	// создать ордер. В случае ошибки - роллбек
+	// TODO: повысить надёжность роллбека
 	if err := o.repo.CreateOrder(newTempOrder); err != nil {
 		if rollbackErr := o.rollbackDecreaseProductCountFromOrder(ctx, newOrder); rollbackErr != nil {
 			return fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, rollbackErr)
@@ -60,13 +63,14 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 		return fmt.Errorf("error when create temp order: %w", err)
 	}
 
+	// удалить товары из корзины после создания заказа
 	if err := o.cartService.DeleteProductsFromCart(ctx, productIds); err != nil {
 		log.Printf("error delete products from cart: %v\n", err)
 	}
 
+	// заказ падает во временный, ожидаем оплаты
 	ctxTimer, cancel := context.WithCancel(context.Background())
 	o.cancelFuncs.Store(newTempOrder.OrderId, cancel)
-
 	go o.paymentWait(ctxTimer, newTempOrder.OrderId)
 
 	return nil
