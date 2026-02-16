@@ -57,8 +57,8 @@ func (c *UserCartRepo) DecreaseProductInCart(productId uint, userId uuid.UUID) e
 	return nil
 }
 
-func (c *UserCartRepo) MarkOrdered(userId uuid.UUID, prIds []uint, orderId string) error {
-	if err := c.DB.Raw(query.MarkOrdered(), userId, prIds, orderId).Error; err != nil {
+func (c *UserCartRepo) DeleteProductsFromCart(userId uuid.UUID, prIds []uint) error {
+	if err := c.DB.Raw(query.DeleteProductsFromCart(), userId, prIds).Error; err != nil {
 		return err
 	}
 	return nil

@@ -101,3 +101,10 @@ func (p *ProductRepo) DecreaseProductCountFromOrder(decreaseProducts string) err
 	}
 	return nil
 }
+
+func (p *ProductRepo) IncreaseProductCountFromOrder(increaseProducts string) error {
+	if err := p.DB.Raw(query.IncreaseProductCountFromOrder(), increaseProducts).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}

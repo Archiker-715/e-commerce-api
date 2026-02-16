@@ -22,10 +22,32 @@ func (p *OrderRepo) CreateOrder(o entity.Order) error {
 		o.InsertedBy,
 		o.OrderPrice,
 		o.Products,
-		o.Temp,
+		o.PaidExpired,
+		o.Paid,
 		o.InsertedBy,
 		o.Inserted,
 	).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
+
+func (p *OrderRepo) GetOrderById(orderId string) (order entity.Order, err error) {
+	if err = p.DB.Raw(query.GetOrderById(), orderId).Scan(&order).Error; err != nil {
+		return entity.Order{}, fmt.Errorf("DB err: %w", err)
+	}
+	return
+}
+
+func (p *OrderRepo) MarkExpired(orderId string) error {
+	if err := p.DB.Raw(query.MarkExpired(), orderId).Error; err != nil {
+		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
+
+func (p *OrderRepo) MarkPaid(orderId string) error {
+	if err := p.DB.Raw(query.MarkPaid(), orderId).Error; err != nil {
 		return fmt.Errorf("DB err: %w", err)
 	}
 	return nil

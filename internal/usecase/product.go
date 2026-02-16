@@ -29,6 +29,7 @@ func NewProductService(repo *pg.ProductRepo, rRepo pg.RulesRepo) *ProductService
 
 type ProdService interface {
 	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error
+	IncreaseProductCountFromOrder(ctx context.Context, prsToOrder []entity.ProductsToOrder) error
 }
 
 var forbiddenError error = errors.New("not enough rights")
@@ -165,4 +166,14 @@ func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prId
 	sqlVals = strings.TrimRight(sqlVals, ",")
 
 	return p.repo.DecreaseProductCountFromOrder(sqlVals)
+}
+
+func (p *ProductService) IncreaseProductCountFromOrder(ctx context.Context, prsToOrder []entity.ProductsToOrder) error {
+	var sqlVals string
+	for _, pr := range prsToOrder {
+		sqlVals += fmt.Sprintf("(%v, %v),", pr.ProductID, pr.CountInOrder)
+	}
+	sqlVals = strings.TrimRight(sqlVals, ",")
+
+	return p.repo.IncreaseProductCountFromOrder(sqlVals)
 }

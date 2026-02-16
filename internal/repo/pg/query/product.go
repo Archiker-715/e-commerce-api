@@ -186,3 +186,18 @@ func DecreaseProductCountFromOrder() string {
 			p.id = u.id;`
 	return query
 }
+
+func IncreaseProductCountFromOrder() string {
+	query :=
+		`WITH increase AS (
+			VALUES ?
+			)
+		UPDATE products p
+		SET
+			count = p.count + d.column2
+		FROM 
+			increase i(id, increment)
+		WHERE
+			p.id = u.id;`
+	return query
+}

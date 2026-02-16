@@ -60,6 +60,15 @@ func DeleteProductFromCart() string {
 	return query
 }
 
+func DeleteProductsFromCart() string {
+	query :=
+		`DELETE FROM users_cart
+		WHERE
+			user_id = ? 
+			AND product_id IN ();`
+	return query
+}
+
 func IncreaseProductInCart() string {
 	query :=
 		`UPDATE users_cart
@@ -83,17 +92,5 @@ func DecreaseProductInCart() string {
 		DELETE FROM users_cart
 		WHERE	
 			count = 0 AND product_id = ? AND user_id = ?;`
-	return query
-}
-
-func MarkOrdered() string {
-	query :=
-		`UPDATE users_cart
-		SET
-			ordered = true
-		WHERE
-			user_id = ? 
-			AND product_id IN ().
-			AND order_id = ?;`
 	return query
 }

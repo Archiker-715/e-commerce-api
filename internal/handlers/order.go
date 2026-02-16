@@ -26,12 +26,3 @@ func (o *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
-// пользак заходит в корзину (GET user-cart) DONE
-// выбирает только то что хочет оплатить либо всё - неважно DONE
-// далее идёт логика оплаты
-// формирование temp_order с id userId+timestamp на выходе (POST TempOrder) DONE
-// горутина которая будет удалять заказ при неоплате через 15 мин, или чекать если оплачено (если оплачен двигаем temp в false)
-// оплата по id (POST payment) (поход во внешнюю систему) (пока заглушка)
-// успешная оплата -  двигаем temp в false
-// DELETE from user-cart то что заказано (ordered true - скрываются из выборки GET user-cart. Заказ оплачен - удаляем WHERE prIds = ? AND order_id = ?. Не оплаечн - ordered = false )

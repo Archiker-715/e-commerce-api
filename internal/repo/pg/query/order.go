@@ -7,7 +7,8 @@ func CreateOrder() string {
 			user_id,
 			order_price,
 			products,
-			temp,
+			paid_expired,
+			paid,
 			inserted_by,
 			inserted
 			)
@@ -15,10 +16,51 @@ func CreateOrder() string {
 				?,
 				?,
 				?,
+				?
 				?,
 				?,
 				?,
 				?
 				;`
+	return query
+}
+
+func GetOrderById() string {
+	query :=
+		`SELECT
+			o.order_id,
+			o.user_id,
+			o.order_price,
+			o.products,
+			o.paid_expired,
+			o.paid,
+			o.inserted_by,
+			o.inserted,
+			o.updated_by,
+			o.updated
+		FROM 
+			orders o
+		WHERE
+			o.order_id = ?;`
+	return query
+}
+
+func MarkExpired() string {
+	query :=
+		`UPDATE orders
+		SET
+			paid_expired = true
+		WHERE
+			order_id = ?;`
+	return query
+}
+
+func MarkPaid() string {
+	query :=
+		`UPDATE orders
+		SET
+			paid = true
+		WHERE
+			order_id = ?;`
 	return query
 }
