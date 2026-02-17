@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -27,4 +28,8 @@ func UserToCtx(ctx context.Context, userId uuid.UUID) context.Context {
 
 func UserFromCtx(ctx context.Context) uuid.UUID {
 	return ctx.Value(UserCtxKey).(uuid.UUID)
+}
+
+func UserFromCtxAsStr(ctx context.Context) string {
+	return fmt.Sprintf("%v", ctx.Value(UserCtxKey).(uuid.UUID))
 }

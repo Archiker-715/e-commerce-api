@@ -25,4 +25,12 @@ func (o *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := r.Context()
+	orderId, err := o.order.TempOrder(ctx, newOrder)
+	if err != nil {
+		errs.WriteError(w, 0, http.StatusInternalServerError, fmt.Sprintf("failed to create temp order: %v", err))
+		return
+	}
+
+	httpsrv.JsonEncode(w, &orderId, 0)
 }

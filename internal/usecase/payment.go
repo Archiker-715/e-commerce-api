@@ -2,29 +2,40 @@ package uc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	"github.com/Archiker-715/e-commerce-api/internal/entity"
+	"github.com/Archiker-715/e-commerce-api/internal/kafka"
 )
 
-type PaymentService struct {
-	OrderService OrderSrv
+type paymentService struct {
+	orderService OrderSrv
+	kafka        kafka.KafkaProducer
 }
 
-func NewPaymentService(orderService OrderSrv) *PaymentService {
-	return &PaymentService{
-		OrderService: orderService,
+func NewPaymentService(orderService OrderSrv, kafka kafka.KafkaProducer) *paymentService {
+	return &paymentService{
+		orderService: orderService,
+		kafka:        kafka,
 	}
 }
 
-func (p *PaymentService) Payment(ctx context.Context, orderId string) error {
+func (p *paymentService) Payment(ctx context.Context, orderId string) error {
 	// payment logic
-	order, err := p.OrderService.GetOrderById(ctx, orderId)
+	order, err := p.orderService.GetOrderById(ctx, orderId)
 	if err != nil {
 		return fmt.Errorf("GetOrderById %v, error: %w", orderId, err)
 	}
-	// TODO: нужен гарант того, что если заказ оплачен, то он должен быть MarkPaid. Нужно подключать кафку
+
+	jsonB, err := json.Marshal(entity.Paid{OrderId: orderId})
+	if err != nil {
+		return fmt.Errorf("marshal orderId err: %w", err)
+	}
 	if !order.PaidExpired {
-		if err := p.OrderService.MarkPaid(ctx, orderId); err != nil {
-			return fmt.Errorf("MarkPaid order %v, error: %w", orderId, err)
+		if err := p.kafka.SendMessage("paid-orders", "localost", auth.UserFromCtxAsStr(ctx), jsonB); err != nil {
+			return err
 		}
 	}
 	return nil

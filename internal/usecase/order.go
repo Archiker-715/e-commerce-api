@@ -2,6 +2,7 @@ package uc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -10,21 +11,26 @@ import (
 
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
+	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
+	"github.com/Archiker-715/e-commerce-api/internal/kafka"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
+	kafkaGo "github.com/segmentio/kafka-go"
 )
 
 type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService
 	cartService    CartService
+	kafka          kafka.KafkaConsumer
 	cancelFuncs    sync.Map
 }
 
-func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService) *OrderService {
+func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService, kafka kafka.KafkaConsumer) *OrderService {
 	return &OrderService{
 		repo:           repo,
 		productService: productService,
 		cartService:    cartService,
+		kafka:          kafka,
 	}
 }
 
@@ -33,7 +39,7 @@ type OrderSrv interface {
 	GetOrderById(ctx context.Context, orderId string) (order entity.Order, err error)
 }
 
-func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) error {
+func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {
 	newTempOrder := entity.Order{
 		OrderId:     fmt.Sprintf("%v%v", auth.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
 		Products:    newOrder,
@@ -51,16 +57,16 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 
 	// зарезервировать товары
 	if err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder); err != nil {
-		return fmt.Errorf("error when decrease prods in stock: %w", err)
+		return common.Id{}, fmt.Errorf("error when decrease prods in stock: %w", err)
 	}
 
 	// создать ордер. В случае ошибки - роллбек
 	// TODO: повысить надёжность роллбека
 	if err := o.repo.CreateOrder(newTempOrder); err != nil {
 		if rollbackErr := o.rollbackDecreaseProductCountFromOrder(ctx, newOrder); rollbackErr != nil {
-			return fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, rollbackErr)
+			return common.Id{}, fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, rollbackErr)
 		}
-		return fmt.Errorf("error when create temp order: %w", err)
+		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
 	}
 
 	// удалить товары из корзины после создания заказа
@@ -73,10 +79,27 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 	o.cancelFuncs.Store(newTempOrder.OrderId, cancel)
 	go o.paymentWait(ctxTimer, newTempOrder.OrderId)
 
-	return nil
+	return common.Id{Id: newTempOrder.OrderId}, nil
 }
 
-func (o *OrderService) MarkPaid(ctx context.Context, orderId string) error {
+func (o *OrderService) ReadPaymentMessages() {
+	handleMessage := func(m kafkaGo.Message) error {
+		var paidOrder entity.Paid
+		if err := json.Unmarshal(m.Value, &paidOrder); err != nil {
+			log.Printf("unmashal err kafka message: key %v, partition %v. Err: %v\n", m.Key, m.Partition, err)
+		}
+		if err := o.MarkPaid(paidOrder.OrderId); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := o.kafka.ReadMessage("paid-orders", "localhost", "test-group", handleMessage); err != nil {
+		log.Printf("handle kafka message error: Err: %v\n", err)
+	}
+}
+
+func (o *OrderService) MarkPaid(orderId string) error {
 	if err := o.repo.MarkPaid(orderId); err != nil {
 		return fmt.Errorf("mark paid orderId %v error: %w", orderId, err)
 	}
