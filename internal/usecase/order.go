@@ -34,7 +34,7 @@ func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService
 }
 
 type OrderSrv interface {
-	MarkPaid(ctx context.Context, orderId string) error
+	MarkPaid(orderId string) error
 	GetOrderById(ctx context.Context, orderId string) (order entity.Order, err error)
 }
 
@@ -94,7 +94,7 @@ func (o *OrderService) ReadPaymentMessages() {
 		return nil
 	}
 
-	if err := o.kafka.ReadMessage("paid-orders", "localhost", "test-group", handleMessage); err != nil {
+	if err := o.kafka.ReadMessage(handleMessage); err != nil {
 		log.Printf("handle kafka message error: Err: %v\n", err)
 	}
 }

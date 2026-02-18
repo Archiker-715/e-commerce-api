@@ -7,47 +7,55 @@ import (
 	kafkaGo "github.com/segmentio/kafka-go"
 )
 
-type kafkaClient struct {
-	producer KafkaProducer
-	consumer KafkaConsumer
+type kafkaProducerClient struct {
+	writer *kafkaGo.Writer
 }
 
-func NewKafkaClient(producer KafkaProducer, consumer KafkaConsumer) *kafkaClient {
-	return &kafkaClient{
-		producer: producer,
-		consumer: consumer,
+type kafkaConsumerClient struct {
+	reader *kafkaGo.Reader
+}
+
+func NewKafkaProducerClient(writer *kafkaGo.Writer) *kafkaProducerClient {
+	return &kafkaProducerClient{
+		writer: writer,
 	}
 }
 
-func NewKafkaProducerClient(producer KafkaProducer) *kafkaClient {
-	return &kafkaClient{
-		producer: producer,
-	}
-}
-
-func NewKafkaConsumerClient(consumer KafkaConsumer) *kafkaClient {
-	return &kafkaClient{
-		consumer: consumer,
-	}
-}
-
-type KafkaProducer interface {
-	SendMessage(topic, brokerAddress, partitionKey string, message []byte) error
-}
-
-type KafkaConsumer interface {
-	ReadMessage(topic, brokerAddress, consumerGroup string, handler func(m kafkaGo.Message) error) (err error)
-}
-
-func (k *kafkaClient) SendMessage(topic, brokerAddress, partitionKey string, message []byte) error {
-	writer := kafkaGo.NewWriter(kafkaGo.WriterConfig{
+func NewKafkaWriter(topic, brokerAddress string) *kafkaGo.Writer {
+	return kafkaGo.NewWriter(kafkaGo.WriterConfig{
 		Brokers:  []string{brokerAddress},
 		Topic:    topic,
 		Balancer: &kafkaGo.LeastBytes{},
 	})
-	defer writer.Close()
+}
 
-	if err := writer.WriteMessages(context.Background(),
+func NewKafkaConsumerClient(reader *kafkaGo.Reader) *kafkaConsumerClient {
+	return &kafkaConsumerClient{
+		reader: reader,
+	}
+}
+
+func NewKafkaReader(topic, brokerAddress, consumerGroup string) *kafkaGo.Reader {
+	return kafkaGo.NewReader(kafkaGo.ReaderConfig{
+		Brokers:        []string{brokerAddress},
+		Topic:          topic,
+		GroupID:        consumerGroup,
+		CommitInterval: 0,
+	})
+}
+
+type KafkaProducer interface {
+	SendMessage(partitionKey string, message []byte) error
+}
+
+type KafkaConsumer interface {
+	ReadMessage(handler func(m kafkaGo.Message) error) (err error)
+}
+
+func (k *kafkaProducerClient) SendMessage(partitionKey string, message []byte) error {
+	defer k.writer.Close()
+
+	if err := k.writer.WriteMessages(context.Background(),
 		kafkaGo.Message{
 			Key:   []byte(partitionKey),
 			Value: message,
@@ -55,11 +63,11 @@ func (k *kafkaClient) SendMessage(topic, brokerAddress, partitionKey string, mes
 	); err != nil {
 		return err
 	}
-	log.Printf("message to %v, %v sent\n", topic, partitionKey)
+	log.Printf("message to %v, %v sent\n", k.writer.Topic, partitionKey)
 	return nil
 }
 
-func (k *kafkaClient) ReadMessage(topic, brokerAddress, consumerGroup string, handler func(m kafkaGo.Message) error) (err error) {
+func (k *kafkaConsumerClient) ReadMessage(handler func(m kafkaGo.Message) error) (err error) {
 	handleMessage := func(ctx context.Context, m kafkaGo.Message, r *kafkaGo.Reader) {
 		if err := handler(m); err != nil {
 			log.Printf("handle message error: offset %v, partition %v, error: %v\n", m.Offset, m.Partition, err)
@@ -70,20 +78,14 @@ func (k *kafkaClient) ReadMessage(topic, brokerAddress, consumerGroup string, ha
 		}
 	}
 
-	r := kafkaGo.NewReader(kafkaGo.ReaderConfig{
-		Brokers:        []string{brokerAddress},
-		Topic:          topic,
-		GroupID:        consumerGroup,
-		CommitInterval: 0,
-	})
-	defer r.Close()
+	defer k.reader.Close()
 
 	var m kafkaGo.Message
 	for {
 		ctx := context.Background()
-		if m, err = r.ReadMessage(ctx); err != nil {
+		if m, err = k.reader.ReadMessage(ctx); err != nil {
 			return err
 		}
-		go handleMessage(ctx, m, r)
+		go handleMessage(ctx, m, k.reader)
 	}
 }

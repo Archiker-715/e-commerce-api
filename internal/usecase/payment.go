@@ -10,19 +10,19 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/kafka"
 )
 
-type paymentService struct {
+type PaymentService struct {
 	orderService OrderSrv
 	kafka        kafka.KafkaProducer
 }
 
-func NewPaymentService(orderService OrderSrv, kafka kafka.KafkaProducer) *paymentService {
-	return &paymentService{
+func NewPaymentService(orderService OrderSrv, kafka kafka.KafkaProducer) *PaymentService {
+	return &PaymentService{
 		orderService: orderService,
 		kafka:        kafka,
 	}
 }
 
-func (p *paymentService) Payment(ctx context.Context, orderId string) error {
+func (p *PaymentService) Payment(ctx context.Context, orderId string) error {
 	// payment logic
 	order, err := p.orderService.GetOrderById(ctx, orderId)
 	if err != nil {
@@ -34,7 +34,7 @@ func (p *paymentService) Payment(ctx context.Context, orderId string) error {
 		return fmt.Errorf("marshal orderId err: %w", err)
 	}
 	if !order.PaidExpired {
-		if err := p.kafka.SendMessage("paid-orders", "localost", ctxpkg.UserFromCtxAsStr(ctx), jsonB); err != nil {
+		if err := p.kafka.SendMessage(ctxpkg.UserFromCtxAsStr(ctx), jsonB); err != nil {
 			return err
 		}
 	}
