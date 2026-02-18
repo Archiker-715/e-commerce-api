@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
 )
@@ -18,11 +18,11 @@ func NewMarketService(repo *pg.MarketRepo) *MarketService {
 }
 
 func (m *MarketService) AddMarket(ctx context.Context, marketName string) error {
-	return m.repo.AddMarket(auth.UserFromCtx(ctx), marketName)
+	return m.repo.AddMarket(ctxpkg.UserFromCtx(ctx), marketName)
 }
 
 func (m *MarketService) LinkUserMarket(ctx context.Context, link entity.LinkUserMarket) error {
-	owner, err := m.repo.CheckOwner(auth.UserFromCtx(ctx), link.MarketId)
+	owner, err := m.repo.CheckOwner(ctxpkg.UserFromCtx(ctx), link.MarketId)
 	if err != nil {
 		return err
 	}

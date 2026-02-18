@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/errs"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -23,7 +24,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			errs.WriteError(w, 0, http.StatusUnauthorized, "invalid token")
 			return
 		}
-		ctx := auth.UserToCtx(r.Context(), getUUID(token))
+		ctx := ctxpkg.UserToCtx(r.Context(), getUUID(token))
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

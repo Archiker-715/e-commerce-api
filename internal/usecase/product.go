@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
@@ -35,7 +35,7 @@ type ProdService interface {
 var forbiddenError error = errors.New("not enough rights")
 
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
-	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
+	ok, err := p.rulesRepo.PermOnProduct(ctxpkg.UserFromCtx(ctx), productId)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 	}
 
 	var productId common.Id
-	ok, err := p.rulesRepo.UserInMarket(auth.UserFromCtx(ctx), pr.MarketId)
+	ok, err := p.rulesRepo.UserInMarket(ctxpkg.UserFromCtx(ctx), pr.MarketId)
 	if err != nil {
 		return productId, err
 	}
@@ -78,7 +78,7 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 		Count:       pr.Count,
 		Active:      pr.Active,
 		Options:     pr.Options,
-		InsertedBy:  auth.UserFromCtx(ctx),
+		InsertedBy:  ctxpkg.UserFromCtx(ctx),
 	}
 
 	var maxAttempts = 10
@@ -99,7 +99,7 @@ func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProd
 
 func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, updPr entity.UpdateProduct) (common.Id, error) {
 	var prId common.Id
-	adm, err := p.rulesRepo.AdminRole(auth.UserFromCtx(ctx))
+	adm, err := p.rulesRepo.AdminRole(ctxpkg.UserFromCtx(ctx))
 	if err != nil {
 		return prId, err
 	}
@@ -110,7 +110,7 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, updP
 		return common.Id{Id: productId}, nil
 	}
 
-	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
+	ok, err := p.rulesRepo.PermOnProduct(ctxpkg.UserFromCtx(ctx), productId)
 	if err != nil {
 		return prId, err
 	}
@@ -126,7 +126,7 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, updP
 		Count:       updPr.Count,
 		Active:      updPr.Active,
 		Options:     updPr.Options,
-		UpdatedBy:   auth.UserFromCtx(ctx),
+		UpdatedBy:   ctxpkg.UserFromCtx(ctx),
 		Updated:     time.Now(),
 		ProductID:   productId,
 	}
@@ -138,7 +138,7 @@ func (p *ProductService) UpdateProduct(ctx context.Context, productId uint, updP
 }
 
 func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) error {
-	ok, err := p.rulesRepo.PermOnProduct(auth.UserFromCtx(ctx), productId)
+	ok, err := p.rulesRepo.PermOnProduct(ctxpkg.UserFromCtx(ctx), productId)
 	if err != nil {
 		return err
 	}

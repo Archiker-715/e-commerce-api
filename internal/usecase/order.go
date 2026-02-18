@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/kafka"
@@ -40,11 +40,11 @@ type OrderSrv interface {
 
 func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {
 	newTempOrder := entity.Order{
-		OrderId:     fmt.Sprintf("%v%v", auth.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
+		OrderId:     fmt.Sprintf("%v%v", ctxpkg.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
 		Products:    newOrder,
 		PaidExpired: false,
 		Paid:        false,
-		InsertedBy:  auth.UserFromCtx(ctx),
+		InsertedBy:  ctxpkg.UserFromCtx(ctx),
 		Inserted:    time.Now(),
 	}
 

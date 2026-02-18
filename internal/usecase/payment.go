@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Archiker-715/e-commerce-api/internal/auth"
+	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/kafka"
 )
@@ -34,7 +34,7 @@ func (p *paymentService) Payment(ctx context.Context, orderId string) error {
 		return fmt.Errorf("marshal orderId err: %w", err)
 	}
 	if !order.PaidExpired {
-		if err := p.kafka.SendMessage("paid-orders", "localost", auth.UserFromCtxAsStr(ctx), jsonB); err != nil {
+		if err := p.kafka.SendMessage("paid-orders", "localost", ctxpkg.UserFromCtxAsStr(ctx), jsonB); err != nil {
 			return err
 		}
 	}
