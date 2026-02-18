@@ -95,11 +95,12 @@ func (p *ProductRepo) UpdatePrice(productId, price uint) error {
 	return nil
 }
 
-func (p *ProductRepo) DecreaseProductCountFromOrder(decreaseProducts string) error {
-	if err := p.DB.Raw(query.DecreaseProductCountFromOrder(), decreaseProducts).Error; err != nil {
-		return fmt.Errorf("DB err: %w", err)
+func (p *ProductRepo) DecreaseProductCountFromOrder(decreaseProducts string) (tx *gorm.DB, err error) {
+	tx = p.DB.Raw(query.DecreaseProductCountFromOrder(), decreaseProducts)
+	if tx.Error != nil {
+		return nil, fmt.Errorf("DB err: %w", err)
 	}
-	return nil
+	return tx, nil
 }
 
 func (p *ProductRepo) IncreaseProductCountFromOrder(increaseProducts string) error {

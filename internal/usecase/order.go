@@ -3,7 +3,6 @@ package uc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -56,16 +55,17 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 	}
 
 	// зарезервировать товары
-	if err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder); err != nil {
+	tx, err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder)
+	if err != nil {
 		return common.Id{}, fmt.Errorf("error when decrease prods in stock: %w", err)
 	}
 
 	// создать ордер. В случае ошибки - роллбек
-	// TODO: повысить надёжность роллбека
 	if err := o.repo.CreateOrder(newTempOrder); err != nil {
-		if rollbackErr := o.rollbackDecreaseProductCountFromOrder(ctx, newOrder); rollbackErr != nil {
-			return common.Id{}, fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, rollbackErr)
+		if err := tx.Rollback().Error; err != nil {
+			return common.Id{}, fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, err)
 		}
+		log.Println("successful rollback DecreaseProductCountFromOrder")
 		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
 	}
 
@@ -132,21 +132,6 @@ func (o *OrderService) paymentWait(ctx context.Context, orderId string) {
 	case <-ctx.Done():
 		log.Printf("orderId %v was paid\n", orderId)
 	}
-}
-
-func (o *OrderService) rollbackDecreaseProductCountFromOrder(ctx context.Context, newOrder []entity.ProductsToOrder) error {
-	maxAttempts := 10
-	for i := 1; i <= maxAttempts; i++ {
-		if err := o.productService.IncreaseProductCountFromOrder(ctx, newOrder); err != nil {
-			log.Println("rollbackDecreaseProductCountFromOrder error: ", err)
-			if i == maxAttempts {
-				return fmt.Errorf("failed to rollback product count after %d attempts: %w", maxAttempts, err)
-			}
-			continue
-		}
-		return nil
-	}
-	return errors.New("rollback attempts exhausted")
 }
 
 func (o *OrderService) GetOrderById(ctx context.Context, orderId string) (order entity.Order, err error) {
