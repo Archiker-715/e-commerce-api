@@ -29,15 +29,12 @@ func main() {
 	marketService := uc.NewMarketService(pg.NewMarketRepo(pg.DB))
 	marketHandler := handlers.NewMarketHandler(marketService)
 
-	// TODO: кафка слой должен сам заниматься чтением сообщений и вызывать сервисные методы, а кафку на чтение передавать в сервис не нужно
-	// при этом на отправку сообщений в текущем варианте передавать райтер можно, но необходимо поладить сервис и райтер чтобы он мог работать с несколькими топиками сразу, но райтер был один
-	// map[topicName]*kafka.Reader ?
-
 	orderService := uc.NewOrderService(pg.NewOrderRepo(pg.DB), productService, userCartService)
-	kafka.NewKafkaOrderHandler(orderService, kafka.NewKafkaConsumerClient(kafka.NewKafkaReader("paid-orders", "localhost", "test-group"))).Start()
+
+	kafka.NewKafkaOrderHandler(orderService, kafka.NewKafkaConsumerClient(kafka.InitReader().NewKafkaReader("paid-orders", "localhost", "test-group"))).Start()
 	orderHandler := handlers.NewOrderHandler(orderService)
 
-	paymentService := uc.NewPaymentService(orderService, kafka.NewKafkaOrderWriter(kafka.NewKafkaProducerClient(kafka.NewKafkaWriter("payments", "localhost"))))
+	paymentService := uc.NewPaymentService(orderService, kafka.NewKafkaOrderWriter(kafka.NewKafkaProducerClient(kafka.InitWriter().NewKafkaWriter("paid-orders", "localhost"))))
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 
 	r := mux.NewRouter()
