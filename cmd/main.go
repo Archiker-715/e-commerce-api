@@ -32,12 +32,12 @@ func main() {
 	// TODO: кафка слой должен сам заниматься чтением сообщений и вызывать сервисные методы, а кафку на чтение передавать в сервис не нужно
 	// при этом на отправку сообщений в текущем варианте передавать райтер можно, но необходимо поладить сервис и райтер чтобы он мог работать с несколькими топиками сразу, но райтер был один
 	// map[topicName]*kafka.Reader ?
-	kafkaConsumerPaidOrders := kafka.NewKafkaConsumerClient(kafka.NewKafkaReader("paid-orders", "localhost", "test-group"))
-	orderService := uc.NewOrderService(pg.NewOrderRepo(pg.DB), productService, userCartService, kafkaConsumerPaidOrders)
+
+	orderService := uc.NewOrderService(pg.NewOrderRepo(pg.DB), productService, userCartService)
+	kafka.NewKafkaOrderHandler(orderService, kafka.NewKafkaConsumerClient(kafka.NewKafkaReader("paid-orders", "localhost", "test-group"))).Start()
 	orderHandler := handlers.NewOrderHandler(orderService)
 
-	kafkaProducerPaidOrders := kafka.NewKafkaProducerClient(kafka.NewKafkaWriter("payments", "localhost"))
-	paymentService := uc.NewPaymentService(orderService, kafkaProducerPaidOrders)
+	paymentService := uc.NewPaymentService(orderService, kafka.NewKafkaOrderWriter(kafka.NewKafkaProducerClient(kafka.NewKafkaWriter("payments", "localhost"))))
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 
 	r := mux.NewRouter()

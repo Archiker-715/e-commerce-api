@@ -2,7 +2,6 @@ package uc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -11,25 +10,22 @@ import (
 	ctxpkg "github.com/Archiker-715/e-commerce-api/internal/auth/ctx"
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
-	"github.com/Archiker-715/e-commerce-api/internal/kafka"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
-	kafkaGo "github.com/segmentio/kafka-go"
 )
 
 type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService
 	cartService    CartService
-	kafka          kafka.KafkaConsumer
 	cancelFuncs    sync.Map
 }
 
-func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService, kafka kafka.KafkaConsumer) *OrderService {
+func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService) *OrderService {
 	return &OrderService{
 		repo:           repo,
 		productService: productService,
 		cartService:    cartService,
-		kafka:          kafka,
+		cancelFuncs:    sync.Map{},
 	}
 }
 
@@ -80,23 +76,6 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 	go o.paymentWait(ctxTimer, newTempOrder.OrderId)
 
 	return common.Id{Id: newTempOrder.OrderId}, nil
-}
-
-func (o *OrderService) ReadPaymentMessages() {
-	handleMessage := func(m kafkaGo.Message) error {
-		var paidOrder entity.Paid
-		if err := json.Unmarshal(m.Value, &paidOrder); err != nil {
-			log.Printf("unmashal err kafka message: key %v, partition %v. Err: %v\n", m.Key, m.Partition, err)
-		}
-		if err := o.MarkPaid(paidOrder.OrderId); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := o.kafka.ReadMessage(handleMessage); err != nil {
-		log.Printf("handle kafka message error: Err: %v\n", err)
-	}
 }
 
 func (o *OrderService) MarkPaid(orderId string) error {
