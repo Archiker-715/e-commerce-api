@@ -11,6 +11,7 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
+	"gorm.io/gorm"
 )
 
 type OrderService struct {
@@ -29,9 +30,8 @@ func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService
 	}
 }
 
-type OrderSrv interface {
-	MarkPaid(orderId string) error
-	GetOrderById(ctx context.Context, orderId string) (order entity.Order, err error)
+type ProdService interface {
+	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) (tx *gorm.DB, err error)
 }
 
 func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {

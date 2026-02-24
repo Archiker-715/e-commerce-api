@@ -27,11 +27,6 @@ func NewProductService(repo *pg.ProductRepo, rRepo pg.RulesRepo) *ProductService
 	}
 }
 
-type ProdService interface {
-	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) (tx *gorm.DB, err error)
-	IncreaseProductCountFromOrder(ctx context.Context, prsToOrder []entity.ProductsToOrder) error
-}
-
 var forbiddenError error = errors.New("not enough rights")
 
 func (p *ProductService) GetProduct(ctx context.Context, productId, article uint) ([]entity.Product, error) {
