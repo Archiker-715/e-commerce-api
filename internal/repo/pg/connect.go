@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var DB *gorm.DB
+// var DB *gorm.DB
 
-func Connect() {
+func Connect() *gorm.DB {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -24,7 +24,7 @@ func Connect() {
 	)
 
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	DB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
@@ -34,8 +34,8 @@ func Connect() {
 	if err := migrate(DB); err != nil {
 		log.Fatal("migration err:", err)
 	}
-
 	log.Println("Database connected successfully")
+	return DB
 }
 
 func migrate(DB *gorm.DB) error {

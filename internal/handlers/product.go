@@ -17,8 +17,8 @@ type ProductHandler struct {
 	product *uc.ProductService
 }
 
-func NewProductHandler(service uc.ProductService) *ProductHandler {
-	return &ProductHandler{product: &service}
+func NewProductHandler(service *uc.ProductService) *ProductHandler {
+	return &ProductHandler{product: service}
 }
 
 var convertQueryParamError error = errors.New("convert to uint query parameters")

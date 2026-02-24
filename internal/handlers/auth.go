@@ -14,8 +14,8 @@ type AuthHandler struct {
 	auth *auth.AuthService
 }
 
-func NewAuthHandler(service auth.AuthService) *AuthHandler {
-	return &AuthHandler{auth: &service}
+func NewAuthHandler(service *auth.AuthService) *AuthHandler {
+	return &AuthHandler{auth: service}
 }
 
 func (a *AuthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
