@@ -14,10 +14,6 @@ import (
 	"github.com/go-redsync/redsync/v4"
 )
 
-type CartService interface {
-	DeleteProductsFromCart(ctx context.Context, prIds []uint) error
-}
-
 type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService
@@ -41,6 +37,10 @@ type ProdService interface {
 	GetProductsByIds(productsId []uint) (products []entity.Product, err error)
 }
 
+type CartService interface {
+	DeleteProductsFromCart(ctx context.Context, prIds []uint) error
+}
+
 type rds interface {
 	LockProducts(productsIds []uint) ([]*redsync.Mutex, error)
 	UnlockProducts(mutex []*redsync.Mutex) error
@@ -48,7 +48,7 @@ type rds interface {
 
 func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {
 	newTempOrder := entity.Order{
-		OrderId:     fmt.Sprintf("%v%v", ctxpkg.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
+		OrderId:     fmt.Sprintf("%v_%v", ctxpkg.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
 		Products:    newOrder,
 		PaidExpired: false,
 		Paid:        false,
