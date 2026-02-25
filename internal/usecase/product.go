@@ -46,6 +46,10 @@ func (p *ProductService) GetProduct(ctx context.Context, productId, article uint
 	return p.repo.GetProducts()
 }
 
+func (p *ProductService) GetProductsByIds(productsId []uint) (products []entity.Product, err error) {
+	return p.repo.GetProductsByIds(productsId)
+}
+
 func (p *ProductService) CreateProduct(ctx context.Context, pr entity.CreateProduct) (common.Id, error) {
 	genArticle := func() string {
 		r := rand.Intn(25 + 1)

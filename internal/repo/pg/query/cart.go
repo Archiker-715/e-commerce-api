@@ -10,11 +10,11 @@ func GetUserCart() string {
 		FROM 
 			users_cart uc
 		WHERE
-			uc.user_id = ? AND uc.ordered = false;`
+			uc.user_id = ?;`
 	return query
 }
 
-func GetProductsFromCartById() string {
+func GetProductsFromCartByIds() string {
 	query :=
 		`SELECT
 			uc.product_id,
@@ -24,7 +24,7 @@ func GetProductsFromCartById() string {
 		FROM 
 			users_cart uc
 		WHERE
-			uc.user_id = ? AND uc.product_id IN (?) AND uc.ordered = false;`
+			uc.user_id = ? AND uc.product_id IN (?);`
 	return query
 }
 

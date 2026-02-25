@@ -2,7 +2,6 @@ CREATE TABLE users_cart (
     user_id UUID NOT NULL,
     product_id BIGINT NOT NULL,
     name VARCHAR(500) NOT NULL,
-    ordered BOOLEAN NOT NULL,
     order_id TEXT NOT NULL,
     count BIGINT NOT NULL,
     unit_price BIGINT NOT NULL,

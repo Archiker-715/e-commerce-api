@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+type CartService interface {
+	DeleteProductsFromCart(ctx context.Context, prIds []uint) error
+}
+
 type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService

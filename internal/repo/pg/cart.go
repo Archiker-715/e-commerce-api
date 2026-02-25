@@ -22,8 +22,8 @@ func (c *UserCartRepo) GetUserCart(userId uuid.UUID) (userCart []entity.UserCart
 	return
 }
 
-func (c *UserCartRepo) GetProductsFromCartById(userId uuid.UUID, productsId []uint) (userCart []entity.UserCart, err error) {
-	if err = c.DB.Raw(query.GetProductsFromCartById(), userId, productsId).Scan(&userCart).Error; err != nil {
+func (c *UserCartRepo) GetProductsFromCartByIds(userId uuid.UUID, productsId []uint) (userCart []entity.UserCart, err error) {
+	if err = c.DB.Raw(query.GetProductsFromCartByIds(), userId, productsId).Scan(&userCart).Error; err != nil {
 		return []entity.UserCart{}, err
 	}
 	return
