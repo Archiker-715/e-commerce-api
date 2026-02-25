@@ -11,7 +11,7 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
-	"gorm.io/gorm"
+	"github.com/go-redsync/redsync/v4"
 )
 
 type CartService interface {
@@ -22,20 +22,28 @@ type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService
 	cartService    CartService
+	redis          rds
 	cancelFuncs    sync.Map
 }
 
-func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService) *OrderService {
+func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService, redis rds) *OrderService {
 	return &OrderService{
 		repo:           repo,
 		productService: productService,
 		cartService:    cartService,
+		redis:          redis,
 		cancelFuncs:    sync.Map{},
 	}
 }
 
 type ProdService interface {
-	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) (tx *gorm.DB, err error)
+	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error
+	GetProductsByIds(productsId []uint) (products []entity.Product, err error)
+}
+
+type rds interface {
+	LockProducts(productsIds []uint) ([]*redsync.Mutex, error)
+	UnlockProducts(mutex []*redsync.Mutex) error
 }
 
 func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {
@@ -54,24 +62,40 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 		productIds = append(productIds, product.ProductID)
 	}
 
-	// зарезервировать товары
-	tx, err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder)
+	// TODO: анализ кейса когда lock не будет получен спустя ретраи
+
+	mutex, err := o.redis.LockProducts(productIds)
 	if err != nil {
-		return common.Id{}, fmt.Errorf("error when decrease prods in stock: %w", err)
+		return common.Id{}, fmt.Errorf("create redis lock err: %w", err)
 	}
 
-	// создать ордер. В случае ошибки - роллбек
-	if err := o.repo.CreateOrder(newTempOrder); err != nil {
+	// проверка количества товаров
+	if err := o.productsInStock(productIds, newTempOrder); err != nil {
+		return common.Id{}, fmt.Errorf("inStock check error: %w", err)
+	}
+
+	// создать ордер
+	tx, err := o.repo.CreateOrder(newTempOrder)
+	if err != nil {
+		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
+	}
+
+	// уменьшить кол-во товаров. В случае ошибки - роллбек ордера
+	if err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder); err != nil {
 		if err := tx.Rollback().Error; err != nil {
 			return common.Id{}, fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, err)
 		}
 		log.Println("successful rollback DecreaseProductCountFromOrder")
-		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
+		return common.Id{}, fmt.Errorf("error when decrease prods in stock: %w", err)
 	}
 
 	// удалить товары из корзины после создания заказа
 	if err := o.cartService.DeleteProductsFromCart(ctx, productIds); err != nil {
 		log.Printf("error delete products from cart: %v\n", err)
+	}
+
+	if err := o.redis.UnlockProducts(mutex); err != nil {
+		log.Printf("redis unlock error: %v\n", err)
 	}
 
 	// заказ падает во временный, ожидаем оплаты
@@ -80,6 +104,24 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 	go o.paymentWait(ctxTimer, newTempOrder.OrderId)
 
 	return common.Id{Id: newTempOrder.OrderId}, nil
+}
+
+func (o *OrderService) productsInStock(productIds []uint, newTempOrder entity.Order) error {
+	products, err := o.productService.GetProductsByIds(productIds)
+	if err != nil {
+		return fmt.Errorf("get products error: %w", err)
+	}
+
+	for _, orderProduct := range newTempOrder.Products {
+		for _, product := range products {
+			if orderProduct.ProductID == product.ProductID {
+				if orderProduct.CountInOrder > product.Count {
+					return fmt.Errorf("not enough quantity for product %q. To order: %v, available: %v", orderProduct.Name, orderProduct.CountInOrder, product.Count)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (o *OrderService) MarkPaid(orderId string) error {

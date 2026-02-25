@@ -147,17 +147,17 @@ func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) erro
 	return p.repo.DeleteProduct(productId)
 }
 
-func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) (tx *gorm.DB, err error) {
+func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error {
 	products, err := p.repo.GetProductsByIds(prIds)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var sqlVals string
 	for _, pr := range products {
 		for _, prToOrd := range prsToOrder {
 			if pr.Count < prToOrd.CountInOrder {
-				return nil, fmt.Errorf("not enough count product %q on stock. Available: %d, in order: %d", pr.Name, pr.Count, prToOrd.CountInOrder)
+				return fmt.Errorf("not enough count product %q on stock. Available: %d, in order: %d", pr.Name, pr.Count, prToOrd.CountInOrder)
 			}
 			sqlVals += fmt.Sprintf("(%v, %v),", pr.ProductID, prToOrd.CountInOrder)
 		}

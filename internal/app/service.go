@@ -4,6 +4,7 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
 	"github.com/Archiker-715/e-commerce-api/internal/handlers"
 	"github.com/Archiker-715/e-commerce-api/internal/kafka"
+	"github.com/Archiker-715/e-commerce-api/internal/redis"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
 	uc "github.com/Archiker-715/e-commerce-api/internal/usecase"
 )
@@ -45,7 +46,8 @@ func (a *app) startMarketService() {
 	a.marketRouter(marketHandler)
 }
 func (a *app) startOrderService() {
-	orderService := uc.NewOrderService(pg.NewOrderRepo(a.DB), productService, userCartService)
+	redisClient := redis.NewRedisClient()
+	orderService := uc.NewOrderService(pg.NewOrderRepo(a.DB), productService, userCartService, redisClient)
 	orderHandler := handlers.NewOrderHandler(orderService)
 	a.orderRouter(orderHandler)
 }

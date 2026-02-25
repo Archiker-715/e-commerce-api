@@ -16,6 +16,7 @@ type app struct {
 }
 
 func Run() {
+	// TODO: переписать запуск приложения  учетом зависимостей
 	newApp().InitServices()
 }
 
