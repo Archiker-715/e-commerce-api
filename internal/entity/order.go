@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProductsToOrder struct {
+type ProductsInOrder struct {
 	ProductID         uint   `json:"productId"`
 	Name              string `json:"name"`
 	TotalPriceOnCount uint   `json:"totalPriceOnCount"`
@@ -16,7 +16,7 @@ type ProductsToOrder struct {
 type Order struct {
 	OrderId     string            `json:"orderId"`
 	OrderPrice  uint              `json:"orderPrice"`
-	Products    []ProductsToOrder `json:"products"`
+	Products    []ProductsInOrder `json:"products"`
 	PaidExpired bool              `json:"paid_expired"`
 	Paid        bool              `json:"paid"`
 	InsertedBy  uuid.UUID         `json:"inserted_by"`

@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
@@ -105,6 +106,57 @@ func (p *ProductRepo) DecreaseProductCountFromOrder(decreaseProducts string) err
 func (p *ProductRepo) IncreaseProductCountFromOrder(increaseProducts string) error {
 	if err := p.DB.Raw(query.IncreaseProductCountFromOrder(), increaseProducts).Error; err != nil {
 		return fmt.Errorf("DB err: %w", err)
+	}
+	return nil
+}
+
+func (p *ProductRepo) ReserveStock(newTempOrder entity.Order) error {
+	tx := p.DB.Begin()
+	if tx.Error != nil {
+		return fmt.Errorf("DB err: %w", tx.Error)
+	}
+
+	for _, product := range newTempOrder.Products {
+		res := tx.Exec(query.ReserveStock(),
+			product.CountInOrder,
+			product.CountInOrder,
+			product.ProductID,
+			product.CountInOrder,
+		)
+
+		if res.Error != nil {
+			return fmt.Errorf("DB err: %w", tx.Error)
+		}
+
+		if res.RowsAffected == 0 {
+			tx.Rollback()
+			return errors.New("not enought products in stock")
+		}
+	}
+	return tx.Commit().Error
+}
+
+func (p *ProductRepo) ConfirmReserve(productsToReserve []entity.ProductsInOrder) error {
+	for _, product := range productsToReserve {
+		if err := p.DB.Raw(query.ConfirmReserve(),
+			product.CountInOrder,
+			product.ProductID,
+		).Error; err != nil {
+			return fmt.Errorf("DB err: %w", err)
+		}
+	}
+	return nil
+}
+
+func (p *ProductRepo) DeclineReserve(productsToReserve []entity.ProductsInOrder) error {
+	for _, product := range productsToReserve {
+		if err := p.DB.Raw(query.DeclineReserve(),
+			product.CountInOrder,
+			product.CountInOrder,
+			product.ProductID,
+		).Error; err != nil {
+			return fmt.Errorf("DB err: %w", err)
+		}
 	}
 	return nil
 }

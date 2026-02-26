@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/Archiker-715/e-commerce-api/internal/auth"
 	"github.com/Archiker-715/e-commerce-api/internal/kafka"
-	"github.com/Archiker-715/e-commerce-api/internal/redis"
 	uc "github.com/Archiker-715/e-commerce-api/internal/usecase"
 )
 
@@ -17,7 +16,6 @@ type services struct {
 }
 
 func newServices(r *repositories) *services {
-	redisClient := redis.NewRedisClient()
 
 	productService := uc.NewProductService(r.ProductRepo, r.ProductRulesRepo)
 	userCartService := uc.NewUserCartService(r.UserCartRepo)
@@ -25,7 +23,6 @@ func newServices(r *repositories) *services {
 		r.OrderRepo,
 		productService,
 		userCartService,
-		redisClient,
 	)
 
 	orderWriter := kafka.NewKafkaOrderWriter(

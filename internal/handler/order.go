@@ -19,7 +19,7 @@ func NewOrderHandler(service *uc.OrderService) *OrderHandler {
 }
 
 func (o *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var newOrder []entity.ProductsToOrder
+	var newOrder []entity.ProductsInOrder
 	if err := httpsrv.JsonDecode(w, r, &newOrder, 0); err != nil {
 		errs.WriteError(w, 0, http.StatusBadRequest, fmt.Sprintf("failed to parse input: %v", err))
 		return
