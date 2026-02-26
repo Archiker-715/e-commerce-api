@@ -13,19 +13,26 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ProductService struct {
 	repo      *pg.ProductRepo
-	rulesRepo pg.RulesRepo
+	rulesRepo rulesRepo
 }
 
-func NewProductService(repo *pg.ProductRepo, rRepo pg.RulesRepo) *ProductService {
+func NewProductService(repo *pg.ProductRepo, rRepo rulesRepo) *ProductService {
 	return &ProductService{
 		repo:      repo,
 		rulesRepo: rRepo,
 	}
+}
+
+type rulesRepo interface {
+	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
+	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
+	AdminRole(userId uuid.UUID) (adm bool, err error)
 }
 
 var forbiddenError error = errors.New("not enough rights")

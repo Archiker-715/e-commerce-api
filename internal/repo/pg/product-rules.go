@@ -14,12 +14,6 @@ func NewProductRulesRepo(db *gorm.DB) *ProductRulesRepo {
 	return &ProductRulesRepo{DB: db}
 }
 
-type RulesRepo interface {
-	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
-	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
-	AdminRole(userId uuid.UUID) (adm bool, err error)
-}
-
 func (p *ProductRulesRepo) PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error) {
 	if err = p.DB.Raw(query.PermOnProduct(), userId, productId).Scan(&hasPerm).Error; err != nil {
 		return false, err
