@@ -13,9 +13,11 @@ type services struct {
 	MarketService   *uc.MarketService
 	OrderService    *uc.OrderService
 	PaymentService  *uc.PaymentService
+	SearchService   *uc.SearchService
 }
 
 func newServices(r *repositories) *services {
+	es := startElastic()
 
 	productService := uc.NewProductService(r.ProductRepo, r.ProductRulesRepo)
 	userCartService := uc.NewUserCartService(r.UserCartRepo)
@@ -24,6 +26,7 @@ func newServices(r *repositories) *services {
 		productService,
 		userCartService,
 	)
+	searchService := uc.NewSearchService(es)
 
 	orderWriter := kafka.NewKafkaOrderWriter(
 		kafka.NewKafkaProducerClient(
@@ -38,5 +41,6 @@ func newServices(r *repositories) *services {
 		MarketService:   uc.NewMarketService(r.MarketRepo),
 		OrderService:    orderService,
 		PaymentService:  uc.NewPaymentService(orderService, orderWriter),
+		SearchService:   searchService,
 	}
 }

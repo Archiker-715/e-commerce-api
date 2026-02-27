@@ -11,7 +11,7 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 )
 
-func (e *elastic) SearchProduct(indexName, keyword string) error {
+func (e *Elastic) SearchProduct(indexName, keyword string) error {
 	var buf strings.Builder
 	query := fmt.Sprintf(`{
         "query": {
@@ -52,7 +52,7 @@ func (e *elastic) SearchProduct(indexName, keyword string) error {
 	return nil
 }
 
-func (e *elastic) BulkIndexProduct(indexName string, docs []entity.Product) error {
+func (e *Elastic) BulkIndexProduct(indexName string, docs []entity.Product) error {
 
 	var buf bytes.Buffer
 	for _, doc := range docs {

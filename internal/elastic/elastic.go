@@ -7,11 +7,11 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 )
 
-type elastic struct {
+type Elastic struct {
 	es *elasticsearch.Client
 }
 
-func NewElastic() *elastic {
+func NewElastic() *Elastic {
 	es, err := elasticsearch.NewDefaultClient()
 	if err != nil {
 		log.Fatalf("new es client err: %v\n", err)
@@ -28,12 +28,12 @@ func NewElastic() *elastic {
 		log.Fatalf("res from es err: %v\n", body)
 	}
 
-	return &elastic{
+	return &Elastic{
 		es: es,
 	}
 }
 
-func (e *elastic) newIndex(indexName string) {
+func (e *Elastic) newIndex(indexName string) {
 	res, err := e.es.Indices.Create(indexName)
 	if err != nil {
 		log.Fatalf("cannot create index: %v\n", err)
