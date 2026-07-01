@@ -11,42 +11,36 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
-	"github.com/go-redsync/redsync/v4"
 )
 
 type OrderService struct {
 	repo           *pg.OrderRepo
 	productService ProdService
 	cartService    CartService
-	redis          rds
 	cancelFuncs    sync.Map
 }
 
-func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService, redis rds) *OrderService {
+func NewOrderService(repo *pg.OrderRepo, productService ProdService, cartService CartService) *OrderService {
 	return &OrderService{
 		repo:           repo,
 		productService: productService,
 		cartService:    cartService,
-		redis:          redis,
 		cancelFuncs:    sync.Map{},
 	}
 }
 
 type ProdService interface {
-	DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error
 	GetProductsByIds(productsId []uint) (products []entity.Product, err error)
+	ReserveStock(ctx context.Context, newTempOrder entity.Order) error
+	ConfirmReserve(ctx context.Context, productsToReserve []entity.ProductsInOrder) error
+	DeclineReserve(ctx context.Context, productsToReserve []entity.ProductsInOrder) error
 }
 
 type CartService interface {
 	DeleteProductsFromCart(ctx context.Context, prIds []uint) error
 }
 
-type rds interface {
-	LockProducts(productsIds []uint) ([]*redsync.Mutex, error)
-	UnlockProducts(mutex []*redsync.Mutex) error
-}
-
-func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsToOrder) (orderId common.Id, err error) {
+func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.ProductsInOrder) (orderId common.Id, err error) {
 	newTempOrder := entity.Order{
 		OrderId:     fmt.Sprintf("%v_%v", ctxpkg.UserFromCtx(ctx), time.Now().Format(time.DateTime)),
 		Products:    newOrder,
@@ -62,31 +56,17 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 		productIds = append(productIds, product.ProductID)
 	}
 
-	// TODO: анализ кейса когда lock не будет получен спустя ретраи
-
-	mutex, err := o.redis.LockProducts(productIds)
-	if err != nil {
-		return common.Id{}, fmt.Errorf("create redis lock err: %w", err)
-	}
-
-	// проверка количества товаров
-	if err := o.productsInStock(productIds, newTempOrder); err != nil {
-		return common.Id{}, fmt.Errorf("inStock check error: %w", err)
+	// зарезервировать товары
+	if err := o.productService.ReserveStock(ctx, newTempOrder); err != nil {
+		return common.Id{}, fmt.Errorf("reserve stock error: %w", err)
 	}
 
 	// создать ордер
-	tx, err := o.repo.CreateOrder(newTempOrder)
-	if err != nil {
-		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
-	}
-
-	// уменьшить кол-во товаров. В случае ошибки - роллбек ордера
-	if err := o.productService.DecreaseProductCountFromOrder(ctx, productIds, newOrder); err != nil {
-		if err := tx.Rollback().Error; err != nil {
-			return common.Id{}, fmt.Errorf("create temp order error: %q, rollback decrease product error: %q", err, err)
+	if orderCreateErr := o.repo.CreateOrder(newTempOrder); orderCreateErr != nil {
+		if declineResErr := o.productService.DeclineReserve(ctx, newTempOrder.Products); err != nil {
+			return common.Id{}, fmt.Errorf("error when create temp order: %w, error when decline reserve: %w", orderCreateErr, declineResErr)
 		}
-		log.Println("successful rollback DecreaseProductCountFromOrder")
-		return common.Id{}, fmt.Errorf("error when decrease prods in stock: %w", err)
+		return common.Id{}, fmt.Errorf("error when create temp order: %w", err)
 	}
 
 	// удалить товары из корзины после создания заказа
@@ -94,34 +74,12 @@ func (o *OrderService) TempOrder(ctx context.Context, newOrder []entity.Products
 		log.Printf("error delete products from cart: %v\n", err)
 	}
 
-	if err := o.redis.UnlockProducts(mutex); err != nil {
-		log.Printf("redis unlock error: %v\n", err)
-	}
-
 	// заказ падает во временный, ожидаем оплаты
 	ctxTimer, cancel := context.WithCancel(context.Background())
 	o.cancelFuncs.Store(newTempOrder.OrderId, cancel)
-	go o.paymentWait(ctxTimer, newTempOrder.OrderId)
+	go o.paymentWait(ctxTimer, newTempOrder)
 
 	return common.Id{Id: newTempOrder.OrderId}, nil
-}
-
-func (o *OrderService) productsInStock(productIds []uint, newTempOrder entity.Order) error {
-	products, err := o.productService.GetProductsByIds(productIds)
-	if err != nil {
-		return fmt.Errorf("get products error: %w", err)
-	}
-
-	for _, orderProduct := range newTempOrder.Products {
-		for _, product := range products {
-			if orderProduct.ProductID == product.ProductID {
-				if orderProduct.CountInOrder > product.Count {
-					return fmt.Errorf("not enough quantity for product %q. To order: %v, available: %v", orderProduct.Name, orderProduct.CountInOrder, product.Count)
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func (o *OrderService) MarkPaid(orderId string) error {
@@ -138,24 +96,30 @@ func (o *OrderService) MarkPaid(orderId string) error {
 	return nil
 }
 
-func (o *OrderService) paymentWait(ctx context.Context, orderId string) {
+func (o *OrderService) paymentWait(ctx context.Context, newTempOrder entity.Order) {
 	select {
 	case <-time.After(15 * time.Minute):
-		order, err := o.repo.GetOrderById(orderId)
+		order, err := o.repo.GetOrderById(newTempOrder.OrderId)
 		if err != nil {
-			log.Printf("GetOrderById error: orderId %v, err: %v,\n", orderId, err)
+			log.Printf("GetOrderById error: orderId %v, err: %v,\n", newTempOrder.OrderId, err)
 		}
 
 		if !order.Paid {
-			if err := o.repo.MarkExpired(orderId); err != nil {
-				log.Printf("MarkExpired error: orderId %v, err: %v\n", orderId, err)
+			if err := o.repo.MarkExpired(newTempOrder.OrderId); err != nil {
+				log.Printf("MarkExpired error: orderId %v, err: %v\n", newTempOrder.OrderId, err)
 			} else {
-				log.Printf("order %v mark expired after 15 mins\n", orderId)
+				log.Printf("order %v mark expired after 15 mins\n", newTempOrder.OrderId)
 			}
 		}
-		o.cancelFuncs.Delete(orderId)
+		o.cancelFuncs.Delete(newTempOrder.OrderId)
+		if err := o.productService.DeclineReserve(ctx, newTempOrder.Products); err != nil {
+			log.Printf("decline reserve error: %v\n", err)
+		}
 	case <-ctx.Done():
-		log.Printf("orderId %v was paid\n", orderId)
+		log.Printf("orderId %v was paid\n", newTempOrder.OrderId)
+		if err := o.productService.ConfirmReserve(ctx, newTempOrder.Products); err != nil {
+			log.Printf("confirm reserve error: %v\n", err)
+		}
 	}
 }
 

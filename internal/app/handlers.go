@@ -9,6 +9,7 @@ type handlers struct {
 	market  *handler.MarketHandler
 	order   *handler.OrderHandler
 	payment *handler.PaymentHandler
+	search  *handler.SearchHandler
 }
 
 func (a *app) initHandlers() {
@@ -19,5 +20,6 @@ func (a *app) initHandlers() {
 		market:  handler.NewMarketHandler(a.Services.MarketService),
 		order:   handler.NewOrderHandler(a.Services.OrderService),
 		payment: handler.NewPaymentHandler(a.Services.PaymentService),
+		search:  handler.NewSearchHandler(a.Services.SearchService),
 	}
 }

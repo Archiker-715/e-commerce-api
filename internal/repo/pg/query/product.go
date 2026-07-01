@@ -8,7 +8,8 @@ func GetProduct() string {
 			p.description,
 			p.category,
 			p.price,
-			p.count,
+			p.available_stock,
+			p.reserved_stock,
 			p.active,
 			p.options,
 			p.article,
@@ -29,7 +30,8 @@ func GetProductById() string {
 			p.description,
 			p.category,
 			p.price,
-			p.count,
+			p.available_stock,
+			p.reserved_stock,
 			p.active,
 			p.options,
 			p.article,
@@ -52,7 +54,8 @@ func GetProductsByIds() string {
 			p.description,
 			p.category,
 			p.price,
-			p.count,
+			p.available_stock,
+			p.reserved_stock,
 			p.active,
 			p.options,
 			p.article,
@@ -75,7 +78,8 @@ func GetProductByArticle() string {
 			p.description,
 			p.category,
 			p.price,
-			p.count,
+			p.available_stock,
+			p.reserved_stock,
 			p.active,
 			p.options,
 			p.article,
@@ -98,7 +102,8 @@ func CreateProduct() string {
 				description,
 				category,
 				price,
-				count,
+				available_stock,
+				reserved_stock,
 				active,
 				options,
 				article,
@@ -111,6 +116,7 @@ func CreateProduct() string {
 				?,
 				?,
 				?,
+				0,
 				?,
 				?,
 				?,
@@ -144,7 +150,7 @@ func UpdateProduct() string {
 			p.description = ?,
 			p.category = ?,
 			p.price = ?,
-			p.count = ?,
+			p.available_stock = ?,
 			p.active = ?,
 			p.options = ?,
 			p.updated_by = ?,
@@ -200,4 +206,25 @@ func IncreaseProductCountFromOrder() string {
 		WHERE
 			p.id = u.id;`
 	return query
+}
+
+func ReserveStock() string {
+	return `UPDATE products
+				SET available_stock = available_stock - ?,
+					reserved_stock = reserved_stock + ?,
+				WHERE product_id = ?
+				AND available_stock >= ?;`
+}
+
+func ConfirmReserve() string {
+	return `UPDATE products
+				SET reserved_stock = reserved_stock - ?,
+				WHERE product_id = ?;`
+}
+
+func DeclineReserve() string {
+	return `UPDATE products
+				SET available_stock = available_stock + ?,
+					reserved_stock = reserved_stock - ?,
+				WHERE product_id = ?;`
 }

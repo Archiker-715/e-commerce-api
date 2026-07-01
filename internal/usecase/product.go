@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
@@ -12,19 +13,26 @@ import (
 	"github.com/Archiker-715/e-commerce-api/internal/entity"
 	"github.com/Archiker-715/e-commerce-api/internal/entity/common"
 	"github.com/Archiker-715/e-commerce-api/internal/repo/pg"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ProductService struct {
 	repo      *pg.ProductRepo
-	rulesRepo pg.RulesRepo
+	rulesRepo rulesRepo
 }
 
-func NewProductService(repo *pg.ProductRepo, rRepo pg.RulesRepo) *ProductService {
+func NewProductService(repo *pg.ProductRepo, rRepo rulesRepo) *ProductService {
 	return &ProductService{
 		repo:      repo,
 		rulesRepo: rRepo,
 	}
+}
+
+type rulesRepo interface {
+	PermOnProduct(userId uuid.UUID, productId uint) (hasPerm bool, err error)
+	UserInMarket(userId uuid.UUID, marketId uint) (inMarket bool, err error)
+	AdminRole(userId uuid.UUID) (adm bool, err error)
 }
 
 var forbiddenError error = errors.New("not enough rights")
@@ -147,7 +155,7 @@ func (p *ProductService) DeleteProduct(ctx context.Context, productId uint) erro
 	return p.repo.DeleteProduct(productId)
 }
 
-func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsToOrder) error {
+func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prIds []uint, prsToOrder []entity.ProductsInOrder) error {
 	products, err := p.repo.GetProductsByIds(prIds)
 	if err != nil {
 		return err
@@ -167,7 +175,7 @@ func (p *ProductService) DecreaseProductCountFromOrder(ctx context.Context, prId
 	return p.repo.DecreaseProductCountFromOrder(sqlVals)
 }
 
-func (p *ProductService) IncreaseProductCountFromOrder(ctx context.Context, prsToOrder []entity.ProductsToOrder) error {
+func (p *ProductService) IncreaseProductCountFromOrder(ctx context.Context, prsToOrder []entity.ProductsInOrder) error {
 	var sqlVals string
 	for _, pr := range prsToOrder {
 		sqlVals += fmt.Sprintf("(%v, %v),", pr.ProductID, pr.CountInOrder)
@@ -175,4 +183,19 @@ func (p *ProductService) IncreaseProductCountFromOrder(ctx context.Context, prsT
 	sqlVals = strings.TrimRight(sqlVals, ",")
 
 	return p.repo.IncreaseProductCountFromOrder(sqlVals)
+}
+
+func (p *ProductService) ReserveStock(ctx context.Context, newTempOrder entity.Order) error {
+	sort.Slice(newTempOrder.Products, func(i, j int) bool {
+		return newTempOrder.Products[i].ProductID < newTempOrder.Products[j].ProductID
+	})
+	return p.repo.ReserveStock(newTempOrder)
+}
+
+func (p *ProductService) ConfirmReserve(ctx context.Context, productsToReserve []entity.ProductsInOrder) error {
+	return p.repo.ConfirmReserve(productsToReserve)
+}
+
+func (p *ProductService) DeclineReserve(ctx context.Context, productsToReserve []entity.ProductsInOrder) error {
+	return p.repo.DeclineReserve(productsToReserve)
 }
